@@ -1,0 +1,3 @@
+[submodule "lib/syscall_intercept"]
+	path = lib/syscall_intercept
+	url = https://github.com/pmem/syscall_intercept.git
