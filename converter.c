@@ -31,12 +31,14 @@
 
 #include <libsyscall_intercept_hook_point.h>
 
+#include <fcntl.h>
+#include <netinet/in.h>
 #include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <syscall.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <stdlib.h>
-#include <netinet/in.h>
 
 #include "bsd_queue.h"
 
@@ -162,9 +164,59 @@ _hook(long syscall_number, long arg0, long arg1, long arg2, long arg3, long arg4
 	}
 }
 
+static int
+_read_sysctl_fastopen(unsigned int *flags)
+{
+	int	fd;
+	int	rc;
+	char	buffer[1024];
+	char *	endp;
+
+	fd = open("/proc/sys/net/ipv4/tcp_fastopen", O_RDONLY);
+	if (fd < 0)
+		return fd;
+
+	rc = read(fd, buffer, sizeof(buffer));
+	close(fd);
+
+	if (rc < 0)
+		return rc;
+
+	/* contains a base 10 number */
+	*flags = strtol(buffer, &endp, 10);
+
+	if (*endp && *endp != '\n')
+		return -1;
+
+	return 0;
+}
+
+static int
+_check_sysctl_fastopen(void)
+{
+	unsigned int	flags		= 0;
+	unsigned int	expected_flags	= (0x1 | 0x4);
+
+	if (_read_sysctl_fastopen(&flags) < 0)
+		return -1;
+
+	/* We use the fastopen backend without requiring exchange of actual
+	 * fastopen options. expected_flags are: 0x1 (sending data in SYN) and
+	 * 0x4 (regardless of cookie availability and without a cookie option).
+	 */
+	if ((flags & expected_flags) != expected_flags)
+		return -1;
+
+	return 0;
+}
+
 static __attribute__((constructor)) void
 init(void)
 {
-	/* Set up the callback function */
-	intercept_hook_point = _hook;
+	if (_check_sysctl_fastopen() < 0)
+		fprintf(stderr, "Disabling the interception of TCP connections, setup "
+		        "the sysctl tcp_fastopen to an appropriate value\n");
+	else
+		/* Set up the callback function */
+		intercept_hook_point = _hook;
 }
