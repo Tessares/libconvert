@@ -4,3 +4,6 @@ project(libconverter C)
 option(BUILD_TESTS "" OFF)
 option(BUILD_EXAMPLES "" OFF)
 add_subdirectory(lib/syscall_intercept)
+
+add_library(converter SHARED converter.c)
+target_link_libraries(converter PRIVATE syscall_intercept_static)
