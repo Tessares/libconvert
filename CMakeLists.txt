@@ -11,3 +11,6 @@ add_library(convert SHARED convert.c convert_util.c lib/log.c/src/log.c)
 include_directories(lib/syscall_intercept/include)
 include_directories(lib/log.c/src)
 target_link_libraries(convert PRIVATE syscall_intercept_static)
+
+enable_testing()
+add_subdirectory(tests)
