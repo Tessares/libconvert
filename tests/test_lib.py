@@ -4,12 +4,12 @@ import os
 
 class curl:
     COMMAND = "curl -4 http://www.tessares.net/ -s -S -o -"
-    ERROR_MATCH = "Recv failure: Connection refused"
+    ERROR_MATCH = "Connection reset by peer"
 
 
 class wget:
-    COMMAND = "wget -4 http://www.tessares.net/ -t1 -nv -O -"
-    ERROR_MATCH = "Read error (Connection refused)"
+    COMMAND = "wget -4 http://www.tessares.net/ -t1 -O -"
+    ERROR_MATCH = "failed: Connection refused."
 
 
 class TestInstance:

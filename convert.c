@@ -38,6 +38,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -260,6 +261,88 @@ _handle_socket(long arg0, long arg1, long arg2, long *result)
 	return SYSCALL_RUN;
 }
 
+#define CONVERT_HDR_LEN sizeof(struct convert_header)
+
+static int
+_read_convert(socket_state_t *state, long *result, bool peek, int fail_errno)
+{
+	uint8_t hdr[CONVERT_HDR_LEN];
+	int	ret;
+	int	flag = peek ? MSG_PEEK : 0;
+	size_t	length;
+	size_t	offset = peek ? CONVERT_HDR_LEN : 0;
+
+	log_debug("peek fd %d to see whether data is in the receive "
+	          "queue", state->fd);
+
+	ret = syscall_no_intercept(SYS_recvfrom, state->fd, hdr,
+	                           CONVERT_HDR_LEN,
+	                           MSG_WAITALL | flag, NULL, NULL);
+
+	log_debug("peek returned %d", ret);
+	if (ret < 0) {
+		/* In case of error we want to skip the actual call.
+		 * Moreover, if return EAGAIN (non-blocking) we don't
+		 * want to app to receive the buffer.
+		 */
+		*result = ret;
+		goto skip;
+	}
+
+	if (convert_parse_header(hdr, ret, &length) < 0) {
+		log_error("[%d] unable to read the convert header",
+		          state->fd);
+		goto error;
+	}
+
+	if (length) {
+		uint8_t			buffer[length + offset];
+		struct convert_opts	opts;
+
+		/* if peek the data was not yet read, so we need to
+		 * also read (again the main header). */
+		if (peek)
+			length += CONVERT_HDR_LEN;
+
+
+		ret = syscall_no_intercept(SYS_recvfrom, state->fd,
+		                           buffer, length, MSG_WAITALL,
+		                           NULL, NULL);
+		if (ret != (int)length || ret < 0) {
+			log_error("[%d] unable to read the convert"
+			          " tlvs", state->fd);
+			goto error;
+		}
+
+		ret = convert_parse_tlvs(buffer + offset, length - offset,
+		                         &opts);
+		if (ret < 0)
+			goto error;
+
+		/* if we receive the TLV error we need to inform the app */
+		if (opts.flags & CONVERT_F_ERROR) {
+			log_info("received TLV error: %u", opts.error_code);
+			goto error;
+		}
+	}
+
+	/* everything was fine : free the state */
+	*result = 0;
+	if (!peek)
+		_free_state(state);
+
+	return SYSCALL_RUN;
+
+error:
+	log_debug("return error: -%d", fail_errno);
+	*result = -fail_errno;
+	if (!peek)
+		_free_state(state);
+
+skip:
+	return SYSCALL_SKIP;
+}
+
 static int
 _handle_connect(long arg0, long arg1, long arg2, long *result)
 {
@@ -287,7 +370,14 @@ _handle_connect(long arg0, long arg1, long arg2, long *result)
 	}
 
 	if (*result >= 0) {
-		log_debug("redirection of fd %d in progress", fd);
+		log_debug("redirection of fd %d in progress: %d", fd, *result);
+
+		/* If the sendto succeeded the received queue can be peeked to
+		 * check
+		 * the answer from the converter. */
+		if (*result > 0)
+			_read_convert(state, result, false, ECONNREFUSED);
+
 		return SYSCALL_SKIP;
 	}
 
@@ -311,76 +401,6 @@ _handle_close(long fd)
 	return SYSCALL_RUN;
 }
 
-#define CONVERT_HDR_LEN sizeof(struct convert_header)
-
-static int
-_read_convert(socket_state_t *state, long *result)
-{
-	uint8_t hdr[CONVERT_HDR_LEN];
-	int	ret;
-	size_t	length;
-
-	log_debug("peek fd %d to see whether data is in the receive "
-	          "queue", state->fd);
-
-	ret = syscall_no_intercept(SYS_recvfrom, state->fd, hdr,
-	                           CONVERT_HDR_LEN,
-	                           MSG_WAITALL, NULL, NULL);
-
-	log_debug("peek returned %d", ret);
-	if (ret < 0) {
-		/* In case of error we want to skip the actual call.
-		 * Moreover, if return EAGAIN (non-blocking) we don't
-		 * want to app to receive the buffer.
-		 */
-		*result = ret;
-		goto skip;
-	}
-
-	if (convert_parse_header(hdr, ret, &length) < 0) {
-		log_error("[%d] unable to read the convert header",
-		          state->fd);
-		goto error;
-	}
-
-	if (length) {
-		uint8_t			buffer[length];
-		struct convert_opts	opts;
-
-		ret = syscall_no_intercept(SYS_recvfrom, state->fd,
-		                           buffer, length, MSG_WAITALL,
-		                           NULL, NULL);
-		if (ret != (int)length || ret < 0) {
-			log_error("[%d] unable to read the convert"
-			          " tlvs", state->fd);
-			goto error;
-		}
-
-		ret = convert_parse_tlvs(buffer, length, &opts);
-		if (ret < 0)
-			goto error;
-
-		/* if we receive the TLV error we need to inform the app */
-		if (opts.flags & CONVERT_F_ERROR) {
-			log_info("received TLV error: %u", opts.error_code);
-			goto error;
-		}
-	}
-
-	/* everything was fine : free the state */
-	_free_state(state);
-
-	return SYSCALL_RUN;
-
-skip:
-	return SYSCALL_SKIP;
-
-error:
-	log_debug("return -ECONNREFUSED");
-	*result = -ECONNREFUSED;
-	_free_state(state);
-	goto skip;
-}
 static int
 _handle_recv(long arg0, long *result)
 {
@@ -391,7 +411,20 @@ _handle_recv(long arg0, long *result)
 	if (!state)
 		return SYSCALL_RUN;
 
-	return _read_convert(state, result);
+	return _read_convert(state, result, false, ECONNREFUSED);
+}
+
+static int
+_handle_send(long arg0, long *result)
+{
+	int		fd = (int)arg0;
+	socket_state_t *state;
+
+	state = _lookup(fd);
+	if (!state)
+		return SYSCALL_RUN;
+
+	return _read_convert(state, result, false, ECONNRESET);
 }
 
 static int
@@ -407,6 +440,8 @@ _hook(long syscall_number, long arg0, long arg1, long arg2, long arg3, long arg4
 		return _handle_close(arg0);
 	case SYS_recvfrom:
 		return _handle_recv(arg0, result);
+	case SYS_sendto:
+		return _handle_send(arg0, result);
 	default:
 		/* The default behavior is to run the default syscall. */
 		return SYSCALL_RUN;

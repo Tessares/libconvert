@@ -10,7 +10,7 @@ class TestError(TestInstance):
         print(converter.build())
 
         class MockConverterError(MockConverter):
-            actions = [RecvSyn(), SendSynAck(payload=converter.build())]
+            actions = [RecvSyn(), SendSynAck(payload=converter.build()), Wait(1), SendPkt(flags='R')]
         MockConverterError()
 
     def validate(self):
