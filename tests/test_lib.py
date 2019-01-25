@@ -2,12 +2,30 @@ import sys
 import os
 
 
+class curl:
+    COMMAND = "curl -4 http://www.tessares.net/ -s -S -o -"
+    ERROR_MATCH = "Recv failure: Connection refused"
+
+
+class wget:
+    COMMAND = "wget -4 http://www.tessares.net/ -t1 -nv -O -"
+    ERROR_MATCH = "Read error (Connection refused)"
+
+
 class TestInstance:
     def run(self):
         raise NotImplemented()
 
     def validate(self):
         raise NotImplemented()
+
+    def _cmd(self):
+        cmd = os.environ["TEST_CMD"]
+        return eval(cmd)
+
+    def run_cmd(self):
+        klass = self._cmd()
+        print(klass.COMMAND)
 
     def _get_result(self):
         with open(os.environ["TEST_OUTPUT_LOG"]) as f:
@@ -20,6 +38,10 @@ class TestInstance:
     def assert_result(self, result):
         assert result in self._get_result(), "Couldn't find '{}' in output".format(result)
 
+    def assert_error_result(self):
+        klass = self._cmd()
+        self.assert_result(klass.ERROR_MATCH)
+
     def assert_log_contains(self, log):
         assert log in self._get_log(), "Couldn't find '{}' in log".format(log)
 
@@ -31,4 +53,5 @@ class TestInstance:
         {
             'server': lambda: self.run(),
             'validate': lambda: self.validate(),
+            'run_cmd': lambda: self.run_cmd(),
         }[action]()

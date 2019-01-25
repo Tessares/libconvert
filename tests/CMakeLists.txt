@@ -1,12 +1,16 @@
 set(TEST_WRAPPER "${PROJECT_SOURCE_DIR}/tests/test-wrapper")
 
-add_test(NAME test-ok
-        COMMAND ${TEST_WRAPPER} test_ok.py)
-add_test(NAME test-error-tlv
-        COMMAND ${TEST_WRAPPER} test_error.py)
 
+foreach(TEST_CMD "curl" "wget")
+    foreach(TEST_TYPE "test_ok" "test_error")
+        set (test_name "${TEST_CMD}-${TEST_TYPE}")
 
-set_tests_properties(test-ok test-error-tlv PROPERTIES
-    ENVIRONMENT "SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR};BUILD_DIR=${PROJECT_BINARY_DIR};TOP_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
-    TIMEOUT 5)
+        add_test(NAME "${test_name}"
+                COMMAND ${TEST_WRAPPER} "${TEST_TYPE}.py")
+        set_tests_properties("${test_name}" PROPERTIES
+            ENVIRONMENT
+            "SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR};BUILD_DIR=${PROJECT_BINARY_DIR};TOP_SOURCE_DIR=${PROJECT_SOURCE_DIR};TEST_CMD=${TEST_CMD}"
+           TIMEOUT 5)
+    endforeach()
+endforeach()
 

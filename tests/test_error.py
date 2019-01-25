@@ -14,7 +14,7 @@ class TestError(TestInstance):
         MockConverterError()
 
     def validate(self):
-        self.assert_result("Recv failure: Connection refused")
+        self.assert_error_result()
         self.assert_log_contains("received TLV error: 1")
 
 

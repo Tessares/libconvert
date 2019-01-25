@@ -18,6 +18,10 @@ SCAPY_PID=
 
 RETURN_CODE=1
 
+test_step() {
+    PYTHONPATH="${PYTHONPATH}:${TOP_SOURCE_DIR}/scapy" "${SOURCE_DIR}/${CONVERT_SCRIPT}" "$1"
+}
+
 cleanup() {
     echo "Error code: ${RETURN_CODE}"
     # make sure that this function execute until the end
@@ -49,14 +53,16 @@ iptables -I INPUT -i lo -p tcp --dport 1234 -j DROP
 ip tcp_metrics flush
 
 # run the scapy server
-PYTHONPATH="${PYTHONPATH}:${TOP_SOURCE_DIR}/scapy" "${SOURCE_DIR}/${CONVERT_SCRIPT}" server > "${TEST_CONVERT_MOCK_LOG}" 2>&1 &
+test_step server > "${TEST_CONVERT_MOCK_LOG}" 2>&1 &
 SCAPY_PID=$!
 
 sleep 1
 
-CONVERT_LOG=${TEST_CONVERT_LOG} CONVERT_ADDR=127.0.0.1 LD_PRELOAD="../libconvert.so" curl -4 http://www.tessares.net/ -s -S -o - > ${TEST_OUTPUT_LOG} 2>&1 || true
 
-ret=$(PYTHONPATH="${PYTHONPATH}:${TOP_SOURCE_DIR}/scapy" "${SOURCE_DIR}/${CONVERT_SCRIPT}" validate 2>&1 | tee ${TEST_VALIDATE_LOG})
+COMMAND=$(test_step run_cmd)
+CONVERT_LOG=${TEST_CONVERT_LOG} CONVERT_ADDR=127.0.0.1 LD_PRELOAD="../libconvert.so" ${COMMAND} > ${TEST_OUTPUT_LOG} 2>&1 || true
+
+ret=$(test_step validate 2>&1 | tee ${TEST_VALIDATE_LOG})
 [ "${ret}" == "" ] && RETURN_CODE=0
 
 sleep 1
