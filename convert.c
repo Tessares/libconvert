@@ -44,6 +44,7 @@
 #include <syscall.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 
 #include "convert.h"
@@ -478,6 +479,42 @@ _validate_sysctl_fastopen(char *err_buf, size_t len)
 }
 
 static void
+_extract_kernel_version(const char *release, int *version, int *major)
+{
+	char *ptr;
+
+	*version = strtol(release, &ptr, 10);
+	ptr++; /* skip '.' */
+	*major = strtol(ptr, NULL, 10);
+}
+
+static int
+_validate_kernel_version(char *err_buf, size_t len)
+{
+	struct utsname	kernel;
+	int		version, major;
+
+	if (uname(&kernel) != 0) {
+		snprintf(err_buf, len,
+		         "unable to retrieve the kernel version: %s",
+		         strerror(errno));
+		return -1;
+	}
+
+	log_info("running kernel version: %s", kernel.release);
+
+	_extract_kernel_version(kernel.release, &version, &major);
+	log_debug("kernel base version: %d.%d", version, major);
+
+	/* The TCP stack will acknowledge data sent in the SYN+ACK. */
+	if (version >= 4 && major >= 5)
+		return 0;
+
+	snprintf(err_buf, len, "need at least kernel 4.5 to run this correctly");
+	return -1;
+}
+
+static void
 _set_convert_addr(struct hostent *host, int type, void *buf, size_t buf_len)
 {
 	if (host->h_addr_list[0])
@@ -598,6 +635,10 @@ _validate_config(char *err_buf, size_t len)
 	int ret = 0;
 
 	ret = _validate_sysctl_fastopen(err_buf, len);
+	if (ret < 0)
+		return ret;
+
+	ret = _validate_kernel_version(err_buf, len);
 	if (ret < 0)
 		return ret;
 
