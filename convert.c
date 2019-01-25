@@ -151,6 +151,14 @@ _free(int fd)
 }
 
 static void
+_set_no_linger(socket_state_t *state)
+{
+	struct linger linger = { 1, 0 };
+
+	setsockopt(state->fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger));
+}
+
+static void
 _to_v4mapped(in_addr_t from, struct in6_addr *to)
 {
 	*to = (struct in6_addr) {
@@ -336,6 +344,10 @@ _read_convert(socket_state_t *state, long *result, bool peek, int fail_errno)
 error:
 	log_debug("return error: -%d", fail_errno);
 	*result = -fail_errno;
+
+	/* ensure that a RST will be sent to the converter. */
+	_set_no_linger(state);
+
 	if (!peek)
 		_free_state(state);
 
