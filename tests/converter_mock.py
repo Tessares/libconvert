@@ -34,8 +34,8 @@ class RecvPkt(Action):
         self.number_of_pkts = npkts
 
     def run(self, converter):
-        pkts = sniff(count=self.number_of_pkts, filter="tcp and host {0} and port {1}".format(converter.address,
-                                                                                              converter.port))
+        pkts = sniff(count=self.number_of_pkts, iface="lo", filter="tcp and host {0} and port {1}".format(converter.address,
+                                                                                                          converter.port))
         pkt = pkts[0]
 
         print("received pkt:", pkt.summary())
