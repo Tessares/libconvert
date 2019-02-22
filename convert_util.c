@@ -124,8 +124,8 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
 }
 
 static ssize_t
-_convert_write_tlv_not_supp(uint8_t *buff, size_t buff_len,
-                            struct convert_opts *opts)
+_convert_write_tlv_not_supp(UNUSED uint8_t *buff, size_t UNUSED buff_len,
+                            UNUSED struct convert_opts *opts)
 {
 	return -1;
 }

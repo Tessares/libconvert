@@ -34,6 +34,8 @@
 
 #include "convert.h"
 
+#define UNUSED __attribute__((__unused__))
+
 enum {
 	_CONVERT_F_INFO = 0,
 	_CONVERT_F_CONNECT,

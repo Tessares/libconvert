@@ -5,7 +5,7 @@ option(BUILD_TESTS "" OFF)
 option(BUILD_EXAMPLES "" OFF)
 add_subdirectory(lib/syscall_intercept)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wextra -Wno-unused-parameter")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wextra")
 
 add_library(convert SHARED convert.c convert_util.c lib/log.c/src/log.c)
 include_directories(lib/syscall_intercept/include)

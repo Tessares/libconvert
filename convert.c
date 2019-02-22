@@ -356,7 +356,7 @@ skip:
 }
 
 static int
-_handle_connect(long arg0, long arg1, long arg2, long *result)
+_handle_connect(long arg0, long arg1, UNUSED long arg2, long *result)
 {
 	socket_state_t *	state;
 	struct sockaddr *	dest	= (struct sockaddr *)arg1;
@@ -440,8 +440,8 @@ _handle_send(long arg0, long *result)
 }
 
 static int
-_hook(long syscall_number, long arg0, long arg1, long arg2, long arg3, long arg4,
-      long arg5, long *result)
+_hook(long syscall_number, long arg0, long arg1, long arg2, long UNUSED arg3,
+      UNUSED long arg4, UNUSED long arg5, long *result)
 {
 	switch (syscall_number) {
 	case SYS_socket:
@@ -562,7 +562,7 @@ _validate_kernel_version(char *err_buf, size_t len)
 }
 
 static void
-_set_convert_addr(struct hostent *host, int type, void *buf, size_t buf_len)
+_set_convert_addr(struct hostent *host, void *buf, size_t buf_len)
 {
 	if (host->h_addr_list[0])
 		memcpy(buf, host->h_addr_list[0], buf_len);
@@ -693,7 +693,7 @@ _validate_config(char *err_buf, size_t len)
 }
 
 static void
-_log_lock(void *udata, int lock)
+_log_lock(UNUSED void *udata, int lock)
 {
 	if (lock)
 		pthread_mutex_lock(&_log_mutex);
