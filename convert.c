@@ -611,7 +611,7 @@ _validate_and_set_convert_addr(const char *name)
 	if (!host)
 		goto inet6;
 
-	_set_convert_addr(host, AF_INET, &_convert_addr4,
+	_set_convert_addr(host, &_convert_addr4,
 	                  sizeof(_convert_addr4));
 
 	inet_ntop(AF_INET, &_convert_addr4, addr_str, sizeof(addr_str));
@@ -624,7 +624,7 @@ inet6:
 	if (!host)
 		goto exit;
 
-	_set_convert_addr(host, AF_INET6, &_convert_addr6,
+	_set_convert_addr(host, &_convert_addr6,
 	                  sizeof(_convert_addr6));
 
 	inet_ntop(AF_INET6, &_convert_addr6, addr_str, sizeof(addr_str));
@@ -664,8 +664,8 @@ _validate_parameters(char *err_buf, size_t len)
 
 		if (*endp && *endp != '\n')
 			log_warn(
-			        "unable to parse port: %s. Falling back to default port.",
-			        convert_port);
+				"unable to parse port: %s. Falling back to default port.",
+				convert_port);
 		else
 			_convert_port = port;
 	}
