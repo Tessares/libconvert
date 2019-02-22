@@ -20,6 +20,7 @@ opening SYN, regardless of cookie availability.
 
 Build with CMake:
 ```
+$ git submodule init && git submodule update
 $ mkdir build && cd build && cmake .. && make
 ```
 
@@ -32,9 +33,11 @@ Currently tested with `curl` & `wget` on both Centos 7 and Ubuntu 18.
 
 ### Running the tests
 
-Requires root:
+Requires Python 3 and Scapy (make sure Scapy can run with root privileges).
+
+Run as root as we need to sniff the lopoback iface:
 ```
-$ sudo make tests
+$ sudo make test
 ```
 
 ### Contributing
