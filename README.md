@@ -35,7 +35,7 @@ Currently tested with `curl` & `wget` on both Centos 7 and Ubuntu 18.
 
 Requires Python 3 and Scapy (make sure Scapy can run with root privileges).
 
-Run as root as we need to sniff the lopoback iface:
+Run as root as we need to sniff the loopback iface:
 ```
 $ sudo make test
 ```
