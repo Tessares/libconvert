@@ -44,6 +44,12 @@ $ sudo make test
 
 Code contributions are more than welcome.
 
+Upon change, please run `uncrustify` and validate that `cppcheck` is still happy:
+```
+$ uncrustify -c uncrustify.cfg -l C --replace --no-backup convert*.{h,c}
+$ cppcheck -I/usr/include -q --language=c --std=c99 --enable=warning,style,performance,portability -j "$(nproc)" --suppress=unusedStructMember ./convert*.{h,c}
+```
+
 To contribute to the Convert protocol, see this [Github repository](https://github.com/obonaventure/draft-tcp-converters), which tracks the evolution of the 0-RTT TCP Converter
 Internet draft.
 
