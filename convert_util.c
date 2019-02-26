@@ -95,20 +95,20 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
 			break;
 		}
 		case CONVERT_CONNECT: {
-			struct convert_connect *connect =
+			struct convert_connect *conv_connect =
 				(struct convert_connect *)buff;
 
-			if (buff_len < CONVERT_ALIGN(sizeof(*connect)))
+			if (buff_len < CONVERT_ALIGN(sizeof(*conv_connect)))
 				return -1;
 
 			/* TODO support the options. */
-			if (CONVERT_TO_BYTES(connect->length) !=
-			    CONVERT_ALIGN(sizeof(*connect)))
+			if (CONVERT_TO_BYTES(conv_connect->length) !=
+			    CONVERT_ALIGN(sizeof(*conv_connect)))
 				return -1;
 
 			opts->flags		|= CONVERT_F_CONNECT;
-			opts->remote_addr	= connect->remote_addr;
-			opts->remote_port	= connect->remote_port;
+			opts->remote_addr	= conv_connect->remote_addr;
+			opts->remote_port	= conv_connect->remote_port;
 
 			break;
 		}
@@ -134,15 +134,15 @@ static ssize_t
 _convert_write_tlv_connect(uint8_t *buff, size_t buff_len,
                            struct convert_opts *opts)
 {
-	struct convert_connect *connect = (struct convert_connect *)buff;
-	size_t			length	=
-		CONVERT_ALIGN(sizeof(*connect));
+	struct convert_connect *conv_connect	= (struct convert_connect *)buff;
+	size_t			length		=
+		CONVERT_ALIGN(sizeof(*conv_connect));
 
 	if (buff_len < length)
 		return -1;
 
-	connect->remote_addr	= opts->remote_addr;
-	connect->remote_port	= opts->remote_port;
+	conv_connect->remote_addr	= opts->remote_addr;
+	conv_connect->remote_port	= opts->remote_port;
 
 	return length;
 }
