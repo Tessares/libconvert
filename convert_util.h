@@ -34,7 +34,13 @@
 
 #include "convert.h"
 
+#ifndef UNUSED
+#ifdef __GNUC__
 #define UNUSED __attribute__((__unused__))
+#else
+#define UNUSED
+#endif
+#endif
 
 enum {
 	_CONVERT_F_INFO = 0,
