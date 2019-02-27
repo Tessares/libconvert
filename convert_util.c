@@ -162,6 +162,25 @@ _convert_write_tlv_error(uint8_t *buff, size_t buff_len,
 	return length;
 }
 
+static ssize_t
+_convert_write_tlv_extended_tcp_hdr(uint8_t *buff, size_t buff_len,
+                                    const struct convert_opts *opts)
+{
+	struct convert_extended_tcp_hdr *ext_tcp_hdr =
+	        (struct convert_extended_tcp_hdr *)buff;
+	size_t length = CONVERT_ALIGN(
+	        sizeof(*ext_tcp_hdr) + opts->tcp_options_len);
+
+	if (buff_len < length)
+		return -1;
+
+	memset(ext_tcp_hdr, '\0', length);
+	memcpy(ext_tcp_hdr->tcp_options, opts->tcp_options,
+	       opts->tcp_options_len);
+
+	return length;
+}
+
 static struct {
 	uint32_t	flag;
 	uint8_t		type;
@@ -186,7 +205,7 @@ static struct {
 	[_CONVERT_F_SUPPORTED_TCP_EXT] = {
 		.flag	= CONVERT_F_SUPPORTED_TCP_EXT,
 		.type	= CONVERT_SUPPORTED_TCP_EXT,
-		.cb	= _convert_write_tlv_not_supp,
+		.cb	= _convert_write_tlv_extended_tcp_hdr,
 	},
 	[_CONVERT_F_COOKIE] =		 {
 		.flag	= CONVERT_F_COOKIE,

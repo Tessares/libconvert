@@ -71,6 +71,10 @@ struct convert_opts {
 	/* if CONVERT_F_ERROR is set in flags */
 	uint8_t		error_code;
 
+	/* if CONVERT_F_EXTENDED_TCP_HDR is set in flags */
+	uint8_t *	tcp_options;
+	size_t		tcp_options_len;
+
 	/* TODO extend to support more TLVs. */
 };
 

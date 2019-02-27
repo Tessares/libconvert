@@ -94,11 +94,11 @@ struct convert_error {
 	uint8_t value[0];
 } __attribute__((packed));
 
-struct convert_extended_header {
+struct convert_extended_tcp_hdr {
 	uint8_t		type;
 	uint8_t		length;
 	uint16_t	unassigned;
-	uint8_t		tcp_hdr[0];
+	uint8_t		tcp_options[0];
 } __attribute__((packed));
 
 #endif
