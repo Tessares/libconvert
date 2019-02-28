@@ -91,9 +91,9 @@ _hash(int fd)
 static socket_state_t *
 _lookup(int fd)
 {
-	int		hash = _hash(fd);
-	socket_state_t *state;
-	socket_state_t *ret = NULL;
+	int		hash	= _hash(fd);
+	socket_state_t *state	= NULL;
+	socket_state_t *ret	= NULL;
 
 	pthread_mutex_lock(&_socket_htable_mutex);
 	LIST_FOREACH (state, &_socket_htable[hash], list) {
