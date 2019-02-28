@@ -26,7 +26,7 @@ $ mkdir build && cd build && cmake .. && make
 
 Usage:
 ```
-$ CONVERT_ADDR=192.0.2.1 CONVERT_PORT=1234 LD_PRELOAD=./libconvert.so curl https://www.tessares.net
+$ CONVERT_ADDR=192.0.2.1 CONVERT_PORT=1234 LD_PRELOAD=./libconvert_client.so curl https://www.tessares.net
 ```
 
 Currently tested with `curl` & `wget` on both Centos 7 and Ubuntu 18.
