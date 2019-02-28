@@ -1,4 +1,4 @@
-# libconvert
+# libconvert [![Build Status](https://travis-ci.com/Tessares/libconvert.svg?branch=master)](https://travis-ci.com/Tessares/libconvert)
 
 An `LD_PRELOAD` library that turns an existing client, using TCP sockets, into
 a Convert client. See the IETF draft [draft-ietf-tcpm-converters-05](https://datatracker.ietf.org/doc/draft-ietf-tcpm-converters) for more information.
@@ -44,7 +44,7 @@ $ sudo make test
 
 Code contributions are more than welcome.
 
-Upon change, please run `uncrustify` and validate that `cppcheck` is still happy:
+Upon change, please run `uncrustify` (0.62) and validate that `cppcheck` is still happy:
 ```
 $ uncrustify -c uncrustify.cfg -l C --replace --no-backup convert*.{h,c}
 $ cppcheck -I/usr/include -q --language=c --std=c99 --enable=warning,style,performance,portability -j "$(nproc)" --suppress=unusedStructMember ./convert*.{h,c}
