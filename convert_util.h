@@ -82,6 +82,6 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
                    struct convert_opts *opts);
 
 ssize_t
-convert_write(uint8_t *buff, size_t buff_len, struct convert_opts *opts);
+convert_write(uint8_t *buff, size_t buff_len, const struct convert_opts *opts);
 
 #endif

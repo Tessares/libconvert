@@ -125,14 +125,14 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
 
 static ssize_t
 _convert_write_tlv_not_supp(UNUSED uint8_t *buff, size_t UNUSED buff_len,
-                            UNUSED struct convert_opts *opts)
+                            UNUSED const struct convert_opts *opts)
 {
 	return -1;
 }
 
 static ssize_t
 _convert_write_tlv_connect(uint8_t *buff, size_t buff_len,
-                           struct convert_opts *opts)
+                           const struct convert_opts *opts)
 {
 	struct convert_connect *conv_connect	= (struct convert_connect *)buff;
 	size_t			length		=
@@ -149,7 +149,7 @@ _convert_write_tlv_connect(uint8_t *buff, size_t buff_len,
 
 static ssize_t
 _convert_write_tlv_error(uint8_t *buff, size_t buff_len,
-                         struct convert_opts *opts)
+                         const struct convert_opts *opts)
 {
 	struct convert_error *	error	= (struct convert_error *)buff;
 	size_t			length	= CONVERT_ALIGN(sizeof(*error));
@@ -166,7 +166,7 @@ static struct {
 	uint32_t	flag;
 	uint8_t		type;
 	ssize_t		(*cb)(uint8_t *buff, size_t buff_len,
-	                      struct convert_opts *opts);
+	                      const struct convert_opts *opts);
 } _converter_tlvs[_CONVERT_F_MAX] = {
 	[_CONVERT_F_INFO] =		 {
 		.flag	= CONVERT_F_INFO,
@@ -202,16 +202,18 @@ static struct {
 
 
 ssize_t
-_convert_write_tlvs(uint8_t *buff, size_t buff_len, struct convert_opts *opts)
+_convert_write_tlvs(uint8_t *buff, size_t buff_len,
+                    const struct convert_opts *opts)
 {
-	ssize_t len = 0;
+	uint8_t flags	= opts->flags;
+	ssize_t len	= 0;
 	int	i;
 
 	for (i = 0; i < _CONVERT_F_MAX; ++i) {
 		struct convert_tlv *	tlv = (struct convert_tlv *)buff;
 		ssize_t			ret;
 
-		if (!(_converter_tlvs[i].flag & opts->flags))
+		if (!(_converter_tlvs[i].flag & flags))
 			continue;
 
 		ret = _converter_tlvs[i].cb(buff, buff_len, opts);
@@ -225,14 +227,14 @@ _convert_write_tlvs(uint8_t *buff, size_t buff_len, struct convert_opts *opts)
 		buff		+= ret;
 		buff_len	-= ret;
 
-		opts->flags &= ~(_converter_tlvs[i].flag);
+		flags &= ~(_converter_tlvs[i].flag);
 	}
 
 	return len;
 }
 
 ssize_t
-convert_write(uint8_t *buff, size_t buff_len, struct convert_opts *opts)
+convert_write(uint8_t *buff, size_t buff_len, const struct convert_opts *opts)
 {
 	struct convert_header * hdr	= (struct convert_header *)buff;
 	size_t			length	= sizeof(*hdr);
