@@ -44,7 +44,7 @@ $ sudo make test
 
 Code contributions are more than welcome.
 
-Upon change, please run `uncrustify` and validate that `cppcheck` is still happy:
+Upon change, please run `uncrustify` (0.62) and validate that `cppcheck` is still happy:
 ```
 $ uncrustify -c uncrustify.cfg -l C --replace --no-backup convert*.{h,c}
 $ cppcheck -I/usr/include -q --language=c --std=c99 --enable=warning,style,performance,portability -j "$(nproc)" --suppress=unusedStructMember ./convert*.{h,c}

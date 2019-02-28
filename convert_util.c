@@ -83,7 +83,7 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
 		switch (tlv->type) {
 		case CONVERT_ERROR: {
 			struct convert_error *error =
-				(struct convert_error *)buff;
+			        (struct convert_error *)buff;
 
 			if (buff_len < CONVERT_ALIGN(sizeof(*error)))
 				return -1;
@@ -96,7 +96,7 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
 		}
 		case CONVERT_CONNECT: {
 			struct convert_connect *conv_connect =
-				(struct convert_connect *)buff;
+			        (struct convert_connect *)buff;
 
 			if (buff_len < CONVERT_ALIGN(sizeof(*conv_connect)))
 				return -1;
@@ -136,7 +136,7 @@ _convert_write_tlv_connect(uint8_t *buff, size_t buff_len,
 {
 	struct convert_connect *conv_connect	= (struct convert_connect *)buff;
 	size_t			length		=
-		CONVERT_ALIGN(sizeof(*conv_connect));
+	        CONVERT_ALIGN(sizeof(*conv_connect));
 
 	if (buff_len < length)
 		return -1;

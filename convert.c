@@ -664,8 +664,8 @@ _validate_parameters(char *err_buf, size_t len)
 
 		if (*endp && *endp != '\n')
 			log_warn(
-				"unable to parse port: %s. Falling back to default port.",
-				convert_port);
+			        "unable to parse port: %s. Falling back to default port.",
+			        convert_port);
 		else
 			_convert_port = port;
 	}
