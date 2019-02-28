@@ -1,0 +1,11 @@
+language: c
+sudo: required
+dist: xenial
+install:
+    - sudo apt-get install -y cmake python3 python3-pip python3-setuptools pkg-config libcapstone-dev cppcheck curl wget
+    - sudo pip3 install scapy
+    - wget https://launchpad.net/~matttbe/+archive/ubuntu/ppa/+files/uncrustify_0.62-0ubuntu1~16.04~ricotz1_amd64.deb && sudo dpkg -i uncrustify_0.62-0ubuntu1~16.04~ricotz1_amd64.deb
+before_script:
+    - sudo sysctl -w net.ipv4.tcp_fastopen=5
+script:
+    - mkdir build && cd build && cmake .. && make && sudo make test

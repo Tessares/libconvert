@@ -1,4 +1,4 @@
-# libconvert
+# libconvert [![Build Status](https://travis-ci.com/Tessares/libconvert.svg?branch=master)](https://travis-ci.com/Tessares/libconvert)
 
 An `LD_PRELOAD` library that turns an existing client, using TCP sockets, into
 a Convert client. See the IETF draft [draft-ietf-tcpm-converters-05](https://datatracker.ietf.org/doc/draft-ietf-tcpm-converters) for more information.
