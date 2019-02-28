@@ -31,10 +31,36 @@
 
 #include <check.h>
 #include <stdlib.h>
+#include "convert_util.h"
 
 START_TEST(test_convert_parse_header){
-	/* TODO */
-	ck_assert(1);
+	int			ret;
+	struct convert_header	hdr;
+	uint8_t *		buff = (uint8_t *)&hdr;
+	size_t			tlvs_length;
+
+	ret = convert_parse_header(buff, sizeof(hdr) - 1, &tlvs_length);
+	ck_assert_msg(ret == -1, "Should fail: buff too short");
+
+	ret = convert_parse_header(buff, sizeof(hdr) + 1, &tlvs_length);
+	ck_assert_msg(ret == -1, "Should fail: buff too long");
+
+	hdr.version	= CONVERT_VERSION + 1;
+	ret		= convert_parse_header(buff, sizeof(hdr), &tlvs_length);
+	ck_assert_msg(ret == -1, "Should fail: unsupported version");
+
+	hdr.version		= CONVERT_VERSION;
+	hdr.total_length	= 2;
+	ret			= convert_parse_header(buff, sizeof(hdr),
+	                                               &tlvs_length);
+	/* hdr.total_length is in 32-bit words, and include the Convert Header.
+	 * tlvs_length is total length of TLVs in bytes, excluding Convert
+	 * Header. We thus expect tlvs_length==4, which is total length (2*4)
+	 * minus the Convert Header size (4).
+	 */
+	ck_assert_msg(ret == 0, "Should parse a valid Convert Header");
+	ck_assert_msg(tlvs_length == 4,
+	              "Should set tlvs_length to the total size of TLVs in bytes");
 }
 END_TEST
 

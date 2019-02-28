@@ -12,9 +12,10 @@ set(TEST_SOURCES
     check_convert_util.c
 )
 
+include_directories(AFTER ${PROJECT_SOURCE_DIR})
 add_executable(check_convert_util ${TEST_SOURCES})
-
-target_link_libraries(check_convert_util ${CHECK_LIBRARIES} ${CHECK_LDFLAGS})
+target_link_libraries(check_convert_util
+                      convert_util ${CHECK_LIBRARIES} ${CHECK_LDFLAGS})
 
 add_test(NAME check_convert_util
          COMMAND check_convert_util)

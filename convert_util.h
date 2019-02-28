@@ -79,7 +79,7 @@ struct convert_opts {
 };
 
 int
-convert_parse_header(const uint8_t *buff, size_t buff_len, size_t *tlv_length);
+convert_parse_header(const uint8_t *buff, size_t buff_len, size_t *tlvs_length);
 
 int
 convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
