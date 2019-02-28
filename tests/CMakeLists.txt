@@ -1,5 +1,25 @@
-set(TEST_WRAPPER "${PROJECT_SOURCE_DIR}/tests/test-wrapper")
+# libconvert_util unit tests
+find_package(PkgConfig REQUIRED)
+find_package(Check REQUIRED)
+pkg_check_modules(CHECK REQUIRED check)
 
+include_directories(${CHECK_INCLUDE_DIRS})
+link_directories(${CHECK_LIBRARY_DIRS})
+
+set(TEST_SOURCES
+    check_convert_util.c
+)
+
+add_executable(check_convert_util ${TEST_SOURCES})
+
+target_link_libraries(check_convert_util ${CHECK_LIBRARIES} ${CHECK_LDFLAGS})
+
+add_test(NAME check_convert_util
+         COMMAND check_convert_util)
+
+# libconvert_client integration tests
+
+set(TEST_WRAPPER "${PROJECT_SOURCE_DIR}/tests/test-wrapper")
 
 foreach(TEST_CMD "curl" "wget")
     foreach(TEST_TYPE "test_ok" "test_error")
