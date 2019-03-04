@@ -79,12 +79,17 @@ struct convert_opts {
 	/* TODO extend to support more TLVs. */
 };
 
+void
+convert_free_opts(struct convert_opts *opts);
+
 int
 convert_parse_header(const uint8_t *buff, size_t buff_len, size_t *tlvs_length);
 
-int
-convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
-                   struct convert_opts *opts);
+/* Returns a pointer to struct convert_opts, which must be freed by the caller
+ * using convert_free_opts(). Returns NULL upon failure.
+ */
+struct convert_opts *
+convert_parse_tlvs(const uint8_t *buff, size_t buff_len);
 
 ssize_t
 convert_write(uint8_t *buff, size_t buff_len, const struct convert_opts *opts);

@@ -97,8 +97,7 @@ START_TEST(test_convert_parse_header){
 END_TEST
 
 START_TEST(test_convert_parse_tlvs_generic){
-	int			ret;
-	struct convert_opts	opts;
+	struct convert_opts *	opts;
 	uint8_t *		buff;
 	size_t			buff_len;
 	struct convert_tlv *	tlv;
@@ -106,28 +105,27 @@ START_TEST(test_convert_parse_tlvs_generic){
 	buff	= (uint8_t *)sample_convert_connect(&buff_len);
 	tlv	= (struct convert_tlv *)buff;
 
-	ret = convert_parse_tlvs(buff, 0, &opts);
-	ck_assert_msg(ret == -1, "Should fail: 0-len buff");
+	opts = convert_parse_tlvs(buff, 0);
+	ck_assert_msg(opts == NULL, "Should fail: 0-len buff");
 
-	ret = convert_parse_tlvs(buff, sizeof(struct convert_tlv) - 1, &opts);
-	ck_assert_msg(ret == -1,
+	opts = convert_parse_tlvs(buff, sizeof(struct convert_tlv) - 1);
+	ck_assert_msg(opts == NULL,
 	              "Should fail: buff len shorter than TLV header");
 
-	ret = convert_parse_tlvs(buff, buff_len - 1, &opts);
-	ck_assert_msg(ret == -1,
+	opts = convert_parse_tlvs(buff, buff_len - 1);
+	ck_assert_msg(opts == NULL,
 	              "Should fail: buff len shorter than TLV length");
 
 	tlv->type	= 42;
-	ret		= convert_parse_tlvs(buff, buff_len, &opts);
-	ck_assert_msg(ret == -1, "Should fail: unknown TLV type");
+	opts		= convert_parse_tlvs(buff, buff_len);
+	ck_assert_msg(opts == NULL, "Should fail: unknown TLV type");
 
 	free(buff);
 }
 END_TEST
 
 START_TEST(test_convert_parse_tlvs_connect){
-	int			ret;
-	struct convert_opts	opts;
+	struct convert_opts *	opts;
 	uint8_t *		buff;
 	size_t			buff_len;
 	struct convert_connect *connect;
@@ -135,30 +133,30 @@ START_TEST(test_convert_parse_tlvs_connect){
 	buff	= (uint8_t *)sample_convert_connect(&buff_len);
 	connect = (struct convert_connect *)buff;
 
-	ret = convert_parse_tlvs(buff, buff_len - 1, &opts);
-	ck_assert_msg(ret == -1,
+	opts = convert_parse_tlvs(buff, buff_len - 1);
+	ck_assert_msg(opts == NULL,
 	              "Should fail: buff len shorter than Connect TLV");
 
-	memset(&opts, '\0', sizeof(struct convert_opts));
-	ret = convert_parse_tlvs(buff, buff_len, &opts);
-	ck_assert_msg(ret == 0, "Should parse valid Convert Connect TLV");
-	ck_assert_msg(opts.flags & CONVERT_F_CONNECT, "Should set CONNECT flag");
-	ck_assert_msg(opts.remote_addr.sin6_port == connect->remote_port,
+	opts = convert_parse_tlvs(buff, buff_len);
+	ck_assert_msg(opts != NULL, "Should parse valid Convert Connect TLV");
+	ck_assert_msg(opts->flags & CONVERT_F_CONNECT,
+	              "Should set CONNECT flag");
+	ck_assert_msg(opts->remote_addr.sin6_port == connect->remote_port,
 	              "Should parse remote_port");
 	unsigned int i = 0;
-	for (i = 0; i < sizeof(opts.remote_addr.sin6_addr.s6_addr); ++i)
+	for (i = 0; i < sizeof(opts->remote_addr.sin6_addr.s6_addr); ++i)
 		ck_assert_msg(
-		        opts.remote_addr.sin6_addr.s6_addr[i] ==
+		        opts->remote_addr.sin6_addr.s6_addr[i] ==
 		        connect->remote_addr.s6_addr[i],
 		        "Should parse remote_addr");
 
+	convert_free_opts(opts);
 	free(buff);
 }
 END_TEST
 
 START_TEST(test_convert_parse_tlvs_error){
-	int			ret;
-	struct convert_opts	opts;
+	struct convert_opts *	opts;
 	uint8_t *		buff;
 	size_t			buff_len;
 	struct convert_error *	error;
@@ -166,23 +164,23 @@ START_TEST(test_convert_parse_tlvs_error){
 	buff	= (uint8_t *)sample_convert_error(&buff_len);
 	error	= (struct convert_error *)buff;
 
-	ret = convert_parse_tlvs(buff, buff_len - 1, &opts);
-	ck_assert_msg(ret == -1, "Should fail: buff len shorter than Error TLV");
+	opts = convert_parse_tlvs(buff, buff_len - 1);
+	ck_assert_msg(opts == NULL,
+	              "Should fail: buff len shorter than Error TLV");
 
-	memset(&opts, '\0', sizeof(struct convert_opts));
-	ret = convert_parse_tlvs(buff, buff_len, &opts);
-	ck_assert_msg(ret == 0, "Should parse valid Convert Error TLV");
-	ck_assert_msg(opts.flags & CONVERT_F_ERROR, "Should set ERROR flag");
-	ck_assert_msg(opts.error_code == error->error_code,
+	opts = convert_parse_tlvs(buff, buff_len);
+	ck_assert_msg(opts != NULL, "Should parse valid Convert Error TLV");
+	ck_assert_msg(opts->flags & CONVERT_F_ERROR, "Should set ERROR flag");
+	ck_assert_msg(opts->error_code == error->error_code,
 	              "Should parse error_code");
 
+	convert_free_opts(opts);
 	free(buff);
 }
 END_TEST
 
 START_TEST(test_convert_parse_tlvs_multiple){
-	int			ret;
-	struct convert_opts	opts;
+	struct convert_opts *	opts;
 	uint8_t *		buff;
 	size_t			buff_len, tlv1_len, tlv2_len;
 	uint8_t *		tlv1, *tlv2;
@@ -195,12 +193,11 @@ START_TEST(test_convert_parse_tlvs_multiple){
 	memcpy(buff, tlv1, tlv1_len);
 	memcpy(buff + tlv1_len, tlv2, tlv2_len);
 
-	memset(&opts, '\0', sizeof(struct convert_opts));
-	ret = convert_parse_tlvs(buff, buff_len, &opts);
-	ck_assert_msg(ret == 0, "Should parse multiple TLVs");
-	ck_assert_msg(opts.flags & CONVERT_F_CONNECT,
+	opts = convert_parse_tlvs(buff, buff_len);
+	ck_assert_msg(opts != NULL, "Should parse multiple TLVs");
+	ck_assert_msg(opts->flags & CONVERT_F_CONNECT,
 	              "Should set flag of first TLV");
-	ck_assert_msg(opts.flags & CONVERT_F_ERROR,
+	ck_assert_msg(opts->flags & CONVERT_F_ERROR,
 	              "Should set flag of second TLV");
 
 	free(tlv1);
