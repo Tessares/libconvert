@@ -65,6 +65,9 @@ int
 convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
                    struct convert_opts *opts)
 {
+	if (buff_len == 0)
+		return -1;
+
 	/* reset the flags */
 	opts->flags = 0;
 
