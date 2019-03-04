@@ -273,11 +273,12 @@ _handle_socket(long arg0, long arg1, long arg2, long *result)
 static int
 _read_convert(socket_state_t *state, long *result, bool peek, int fail_errno)
 {
-	uint8_t hdr[CONVERT_HDR_LEN];
-	int	ret;
-	int	flag = peek ? MSG_PEEK : 0;
-	size_t	length;
-	size_t	offset = peek ? CONVERT_HDR_LEN : 0;
+	uint8_t			hdr[CONVERT_HDR_LEN];
+	int			ret;
+	int			flag = peek ? MSG_PEEK : 0;
+	size_t			length;
+	size_t			offset = peek ? CONVERT_HDR_LEN : 0;
+	struct convert_opts *	opts;
 
 	log_debug("peek fd %d to see whether data is in the receive "
 	          "queue", state->fd);
@@ -303,8 +304,7 @@ _read_convert(socket_state_t *state, long *result, bool peek, int fail_errno)
 	}
 
 	if (length) {
-		uint8_t			buffer[length + offset];
-		struct convert_opts	opts;
+		uint8_t buffer[length + offset];
 
 		/* if peek the data was not yet read, so we need to
 		 * also read (again the main header). */
@@ -321,15 +321,14 @@ _read_convert(socket_state_t *state, long *result, bool peek, int fail_errno)
 			goto error;
 		}
 
-		ret = convert_parse_tlvs(buffer + offset, length - offset,
-		                         &opts);
-		if (ret < 0)
+		opts = convert_parse_tlvs(buffer + offset, length - offset);
+		if (opts == NULL)
 			goto error;
 
 		/* if we receive the TLV error we need to inform the app */
-		if (opts.flags & CONVERT_F_ERROR) {
-			log_info("received TLV error: %u", opts.error_code);
-			goto error;
+		if (opts->flags & CONVERT_F_ERROR) {
+			log_info("received TLV error: %u", opts->error_code);
+			goto error_and_free;
 		}
 	}
 
@@ -339,6 +338,9 @@ _read_convert(socket_state_t *state, long *result, bool peek, int fail_errno)
 		_free_state(state);
 
 	return SYSCALL_RUN;
+
+error_and_free:
+	convert_free_opts(opts);
 
 error:
 	log_debug("return error: -%d", fail_errno);

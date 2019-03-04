@@ -30,6 +30,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 
 #include "convert_util.h"
 
@@ -61,27 +62,35 @@ convert_parse_header(const uint8_t *buff, size_t buff_len, size_t *tlvs_length)
 	return 0;
 }
 
-int
-convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
-                   struct convert_opts *opts)
+void
+convert_free_opts(struct convert_opts *opts)
 {
-	if (buff_len == 0)
-		return -1;
+	free(opts);
+}
 
-	/* reset the flags */
-	opts->flags = 0;
+struct convert_opts *
+convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
+{
+	struct convert_opts *opts;
+
+	if (buff_len == 0)
+		return NULL;
+
+	opts = calloc(sizeof(struct convert_opts), 1);
+	if (!opts)
+		return NULL;
 
 	while (buff_len > 0) {
 		struct convert_tlv *	tlv = (struct convert_tlv *)buff;
 		size_t			tlv_len;
 
 		if (buff_len < CONVERT_ALIGN(sizeof(*tlv)))
-			return -1;
+			return NULL;
 
 		tlv_len = CONVERT_TO_BYTES(tlv->length);
 
 		if (buff_len < tlv_len)
-			return -1;
+			return NULL;
 
 		switch (tlv->type) {
 		case CONVERT_ERROR: {
@@ -89,7 +98,7 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
 			        (struct convert_error *)buff;
 
 			if (buff_len < CONVERT_ALIGN(sizeof(*error)))
-				return -1;
+				return NULL;
 
 			opts->flags		|= CONVERT_F_ERROR;
 			opts->error_code	= error->error_code;
@@ -102,12 +111,12 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
 			        (struct convert_connect *)buff;
 
 			if (buff_len < CONVERT_ALIGN(sizeof(*conv_connect)))
-				return -1;
+				return NULL;
 
 			/* TODO support the options. */
 			if (CONVERT_TO_BYTES(conv_connect->length) !=
 			    CONVERT_ALIGN(sizeof(*conv_connect)))
-				return -1;
+				return NULL;
 
 			opts->flags |= CONVERT_F_CONNECT;
 			/* conv_connect comes from the network, and thus is in
@@ -124,13 +133,14 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
 		}
 		/* TODO support other TLVs. */
 		default:
-			return -1;
+			return NULL;
 		}
 
 		buff		+= tlv_len;
 		buff_len	-= tlv_len;
 	}
-	return 0;
+
+	return opts;
 }
 
 static ssize_t
