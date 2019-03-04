@@ -143,12 +143,12 @@ START_TEST(test_convert_parse_tlvs_connect){
 	ret = convert_parse_tlvs(buff, buff_len, &opts);
 	ck_assert_msg(ret == 0, "Should parse valid Convert Connect TLV");
 	ck_assert_msg(opts.flags & CONVERT_F_CONNECT, "Should set CONNECT flag");
-	ck_assert_msg(opts.remote_port == connect->remote_port,
+	ck_assert_msg(opts.remote_addr.sin6_port == connect->remote_port,
 	              "Should parse remote_port");
 	unsigned int i = 0;
-	for (i = 0; i < sizeof(opts.remote_addr.s6_addr); ++i)
+	for (i = 0; i < sizeof(opts.remote_addr.sin6_addr.s6_addr); ++i)
 		ck_assert_msg(
-		        opts.remote_addr.s6_addr[i] ==
+		        opts.remote_addr.sin6_addr.s6_addr[i] ==
 		        connect->remote_addr.s6_addr[i],
 		        "Should parse remote_addr");
 

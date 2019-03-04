@@ -109,9 +109,16 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
 			    CONVERT_ALIGN(sizeof(*conv_connect)))
 				return -1;
 
-			opts->flags		|= CONVERT_F_CONNECT;
-			opts->remote_addr	= conv_connect->remote_addr;
-			opts->remote_port	= conv_connect->remote_port;
+			opts->flags |= CONVERT_F_CONNECT;
+			/* conv_connect comes from the network, and thus is in
+			 * network byte order. The sin6_port and sin6_addr
+			 * members of remote_addr shall also be in network byte
+			 * order.
+			 */
+			opts->remote_addr.sin6_addr =
+			        conv_connect->remote_addr;
+			opts->remote_addr.sin6_port =
+			        conv_connect->remote_port;
 
 			break;
 		}
@@ -144,8 +151,8 @@ _convert_write_tlv_connect(uint8_t *buff, size_t buff_len,
 	if (buff_len < length)
 		return -1;
 
-	conv_connect->remote_addr	= opts->remote_addr;
-	conv_connect->remote_port	= opts->remote_port;
+	conv_connect->remote_addr	= opts->remote_addr.sin6_addr;
+	conv_connect->remote_port	= opts->remote_addr.sin6_port;
 
 	return length;
 }
