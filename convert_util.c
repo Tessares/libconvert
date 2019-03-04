@@ -65,6 +65,9 @@ int
 convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
                    struct convert_opts *opts)
 {
+	if (buff_len == 0)
+		return -1;
+
 	/* reset the flags */
 	opts->flags = 0;
 
@@ -108,7 +111,8 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len,
 
 			opts->flags		|= CONVERT_F_CONNECT;
 			opts->remote_addr	= conv_connect->remote_addr;
-			opts->remote_port	= conv_connect->remote_port;
+			opts->remote_port	=
+			        ntohs(conv_connect->remote_port);
 
 			break;
 		}
