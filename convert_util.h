@@ -62,18 +62,19 @@ enum {
 };
 
 struct convert_opts {
-	uint8_t		flags;
+	uint8_t			flags;
 
-	/* if CONVERT_F_CONNECT is set in flags */
-	struct in6_addr remote_addr;
-	uint16_t	remote_port;
+	/* if CONVERT_F_CONNECT is set in flags
+	 * The sin_port and sin_addr members shall be in network byte order.
+	 */
+	struct sockaddr_in6	remote_addr;
 
 	/* if CONVERT_F_ERROR is set in flags */
-	uint8_t		error_code;
+	uint8_t			error_code;
 
 	/* if CONVERT_F_EXTENDED_TCP_HDR is set in flags */
-	uint8_t *	tcp_options;
-	size_t		tcp_options_len;
+	uint8_t *		tcp_options;
+	size_t			tcp_options_len;
 
 	/* TODO extend to support more TLVs. */
 };

@@ -181,8 +181,8 @@ _redirect_connect_tlv(uint8_t *buf, size_t buf_len, struct sockaddr *addr)
 		struct sockaddr_in *in = (struct sockaddr_in *)addr;
 
 		/* already in network bytes */
-		_to_v4mapped(in->sin_addr.s_addr, &opts.remote_addr);
-		opts.remote_port = in->sin_port;
+		_to_v4mapped(in->sin_addr.s_addr, &opts.remote_addr.sin6_addr);
+		opts.remote_addr.sin6_port = in->sin_port;
 		break;
 	}
 	case AF_INET6: {
@@ -191,7 +191,6 @@ _redirect_connect_tlv(uint8_t *buf, size_t buf_len, struct sockaddr *addr)
 		/* already in network bytes */
 		memcpy(&opts.remote_addr, &in6->sin6_addr,
 		       sizeof(opts.remote_addr));
-		opts.remote_port = in6->sin6_port;
 		break;
 	}
 	default:
