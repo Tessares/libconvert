@@ -82,7 +82,7 @@ sample_convert_tcp_ext_hdr_tlv(size_t *len)
 	return ext_tcp_hdr;
 }
 
-START_TEST(test_convert_parse_header){
+START_TEST (test_convert_parse_header) {
 	int			ret;
 	struct convert_header	hdr;
 	uint8_t *		buff = (uint8_t *)&hdr;
@@ -113,7 +113,7 @@ START_TEST(test_convert_parse_header){
 }
 END_TEST
 
-START_TEST(test_convert_parse_tlvs_generic){
+START_TEST (test_convert_parse_tlvs_generic) {
 	struct convert_opts *	opts;
 	uint8_t *		buff;
 	size_t			buff_len;
@@ -141,7 +141,7 @@ START_TEST(test_convert_parse_tlvs_generic){
 }
 END_TEST
 
-START_TEST(test_convert_parse_tlvs_connect){
+START_TEST (test_convert_parse_tlvs_connect) {
 	struct convert_opts *	opts;
 	uint8_t *		buff;
 	size_t			buff_len;
@@ -172,7 +172,7 @@ START_TEST(test_convert_parse_tlvs_connect){
 }
 END_TEST
 
-START_TEST(test_convert_parse_tlvs_error){
+START_TEST (test_convert_parse_tlvs_error) {
 	struct convert_opts *	opts;
 	uint8_t *		buff;
 	size_t			buff_len;
@@ -196,7 +196,7 @@ START_TEST(test_convert_parse_tlvs_error){
 }
 END_TEST
 
-START_TEST(test_convert_parse_tlvs_ext_tcp_hdr){
+START_TEST (test_convert_parse_tlvs_ext_tcp_hdr) {
 	struct convert_opts *			opts;
 	uint8_t *				buff;
 	size_t					buff_len;
@@ -232,7 +232,7 @@ START_TEST(test_convert_parse_tlvs_ext_tcp_hdr){
 }
 END_TEST
 
-START_TEST(test_convert_parse_tlvs_multiple){
+START_TEST (test_convert_parse_tlvs_multiple) {
 	struct convert_opts *	opts;
 	uint8_t *		buff;
 	size_t			buff_len, tlv1_len, tlv2_len;
@@ -260,7 +260,7 @@ START_TEST(test_convert_parse_tlvs_multiple){
 }
 END_TEST
 
-START_TEST(test_convert_write_tlvs){
+START_TEST (test_convert_write_tlvs) {
 	unsigned int i;
 	uint8_t *(*tlv_builders[3])(size_t * len) = {
 		(uint8_t * (*)(size_t *))sample_convert_connect_tlv,
