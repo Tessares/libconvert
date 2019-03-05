@@ -39,11 +39,11 @@ sample_convert_error(size_t *len)
 {
 	/* Error TLV is variable length. Value in this example is 1-byte long. */
 	*len = sizeof(struct convert_error) + 1;
-	struct convert_error *	error		= malloc(*len);
-	struct convert_tlv *	error_tlv	= (struct convert_tlv *)error;
+	struct convert_error *	error	= malloc(*len);
+	struct convert_tlv *	tlv	= (struct convert_tlv *)error;
 
-	error_tlv->length	= 1;    /* In 32-bit words */
-	error_tlv->type		= CONVERT_ERROR;
+	tlv->length		= 1;    /* In 32-bit words */
+	tlv->type		= CONVERT_ERROR;
 	error->error_code	= 96;   /* Connection Reset */
 	error->value[0]		= 0;
 
@@ -54,15 +54,32 @@ struct convert_connect *
 sample_convert_connect(size_t *len)
 {
 	*len = sizeof(struct convert_connect);
-	struct convert_connect *connect		= malloc(*len);
-	struct convert_tlv *	connect_tlv	= (struct convert_tlv *)connect;
+	struct convert_connect *connect = malloc(*len);
+	struct convert_tlv *	tlv	= (struct convert_tlv *)connect;
 
-	connect_tlv->length	= 5; /* In 32-bit words */
-	connect_tlv->type	= CONVERT_CONNECT;
+	tlv->length		= 5; /* In 32-bit words */
+	tlv->type		= CONVERT_CONNECT;
 	connect->remote_port	= htons(12345);
 	inet_pton(AF_INET6, "::1:5ee:bad:c0de", &(connect->remote_addr));
 
 	return connect;
+}
+
+struct convert_extended_tcp_hdr *
+sample_convert_tcp_ext_hdr(size_t *len)
+{
+	size_t tcp_opts_len = 8;
+
+	*len = sizeof(struct convert_extended_tcp_hdr) + tcp_opts_len;
+	struct convert_extended_tcp_hdr *	ext_tcp_hdr	= malloc(*len);
+	struct convert_tlv *			tlv		=
+	        (struct convert_tlv *)ext_tcp_hdr;
+
+	tlv->length		= 3; /* In 32-bit words */
+	tlv->type		= CONVERT_EXTENDED_TCP_HDR;
+	ext_tcp_hdr->unassigned = 0;
+
+	return ext_tcp_hdr;
 }
 
 START_TEST(test_convert_parse_header){
@@ -133,7 +150,7 @@ START_TEST(test_convert_parse_tlvs_connect){
 	buff	= (uint8_t *)sample_convert_connect(&buff_len);
 	connect = (struct convert_connect *)buff;
 
-	opts = convert_parse_tlvs(buff, buff_len - 1);
+	opts = convert_parse_tlvs(buff, sizeof(struct convert_connect) - 1);
 	ck_assert_msg(opts == NULL,
 	              "Should fail: buff len shorter than Connect TLV");
 
@@ -164,7 +181,7 @@ START_TEST(test_convert_parse_tlvs_error){
 	buff	= (uint8_t *)sample_convert_error(&buff_len);
 	error	= (struct convert_error *)buff;
 
-	opts = convert_parse_tlvs(buff, buff_len - 1);
+	opts = convert_parse_tlvs(buff, sizeof(struct convert_error) - 1);
 	ck_assert_msg(opts == NULL,
 	              "Should fail: buff len shorter than Error TLV");
 
@@ -173,6 +190,42 @@ START_TEST(test_convert_parse_tlvs_error){
 	ck_assert_msg(opts->flags & CONVERT_F_ERROR, "Should set ERROR flag");
 	ck_assert_msg(opts->error_code == error->error_code,
 	              "Should parse error_code");
+
+	convert_free_opts(opts);
+	free(buff);
+}
+END_TEST
+
+START_TEST(test_convert_parse_tlvs_ext_tcp_hdr){
+	struct convert_opts *			opts;
+	uint8_t *				buff;
+	size_t					buff_len;
+	struct convert_extended_tcp_hdr *	ext_tcp_hdr;
+	unsigned int				i;
+	size_t					tcp_opts_len;
+
+	buff		= (uint8_t *)sample_convert_tcp_ext_hdr(&buff_len);
+	ext_tcp_hdr	= (struct convert_extended_tcp_hdr *)buff;
+
+	opts = convert_parse_tlvs(buff,
+	                          sizeof(struct convert_extended_tcp_hdr) - 1);
+	ck_assert_msg(opts == NULL,
+	              "Should fail: buff len shorter than Extended TCP Header TLV");
+
+	opts = convert_parse_tlvs(buff, buff_len);
+	ck_assert_msg(opts != NULL,
+	              "Should parse valid Convert Extended TCP Header TLV");
+	ck_assert_msg(opts->flags & CONVERT_F_EXTENDED_TCP_HDR,
+	              "Should set EXTENDED_TCP_HDR flag");
+
+	tcp_opts_len = buff_len - sizeof(struct convert_extended_tcp_hdr);
+	ck_assert_msg(opts->tcp_options_len == tcp_opts_len,
+	              "Should set tcp_options_len");
+
+	for (i = 0; i < tcp_opts_len; ++i)
+		ck_assert_msg(
+		        opts->tcp_options[i] == ext_tcp_hdr->tcp_options[i],
+		        "Should return exact copy TCP options");
 
 	convert_free_opts(opts);
 	free(buff);
@@ -200,6 +253,7 @@ START_TEST(test_convert_parse_tlvs_multiple){
 	ck_assert_msg(opts->flags & CONVERT_F_ERROR,
 	              "Should set flag of second TLV");
 
+	convert_free_opts(opts);
 	free(tlv1);
 	free(tlv2);
 	free(buff);
@@ -226,6 +280,7 @@ convert_util_suite(void)
 	tcase_add_test(tc_core, test_convert_parse_tlvs_generic);
 	tcase_add_test(tc_core, test_convert_parse_tlvs_connect);
 	tcase_add_test(tc_core, test_convert_parse_tlvs_error);
+	tcase_add_test(tc_core, test_convert_parse_tlvs_ext_tcp_hdr);
 	tcase_add_test(tc_core, test_convert_parse_tlvs_multiple);
 	tcase_add_test(tc_core, test_convert_write);
 
