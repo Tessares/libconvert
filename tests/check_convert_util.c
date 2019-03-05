@@ -35,7 +35,7 @@
 #include "convert_util.h"
 
 struct convert_error *
-sample_convert_error(size_t *len)
+sample_convert_error_tlv(size_t *len)
 {
 	/* Error TLV is variable length. Value in this example is 1-byte long. */
 	*len = sizeof(struct convert_error) + 1;
@@ -51,7 +51,7 @@ sample_convert_error(size_t *len)
 }
 
 struct convert_connect *
-sample_convert_connect(size_t *len)
+sample_convert_connect_tlv(size_t *len)
 {
 	*len = sizeof(struct convert_connect);
 	struct convert_connect *connect = malloc(*len);
@@ -66,7 +66,7 @@ sample_convert_connect(size_t *len)
 }
 
 struct convert_extended_tcp_hdr *
-sample_convert_tcp_ext_hdr(size_t *len)
+sample_convert_tcp_ext_hdr_tlv(size_t *len)
 {
 	size_t tcp_opts_len = 8;
 
@@ -119,7 +119,7 @@ START_TEST(test_convert_parse_tlvs_generic){
 	size_t			buff_len;
 	struct convert_tlv *	tlv;
 
-	buff	= (uint8_t *)sample_convert_connect(&buff_len);
+	buff	= (uint8_t *)sample_convert_connect_tlv(&buff_len);
 	tlv	= (struct convert_tlv *)buff;
 
 	opts = convert_parse_tlvs(buff, 0);
@@ -147,7 +147,7 @@ START_TEST(test_convert_parse_tlvs_connect){
 	size_t			buff_len;
 	struct convert_connect *connect;
 
-	buff	= (uint8_t *)sample_convert_connect(&buff_len);
+	buff	= (uint8_t *)sample_convert_connect_tlv(&buff_len);
 	connect = (struct convert_connect *)buff;
 
 	opts = convert_parse_tlvs(buff, sizeof(struct convert_connect) - 1);
@@ -178,7 +178,7 @@ START_TEST(test_convert_parse_tlvs_error){
 	size_t			buff_len;
 	struct convert_error *	error;
 
-	buff	= (uint8_t *)sample_convert_error(&buff_len);
+	buff	= (uint8_t *)sample_convert_error_tlv(&buff_len);
 	error	= (struct convert_error *)buff;
 
 	opts = convert_parse_tlvs(buff, sizeof(struct convert_error) - 1);
@@ -204,7 +204,7 @@ START_TEST(test_convert_parse_tlvs_ext_tcp_hdr){
 	unsigned int				i;
 	size_t					tcp_opts_len;
 
-	buff		= (uint8_t *)sample_convert_tcp_ext_hdr(&buff_len);
+	buff		= (uint8_t *)sample_convert_tcp_ext_hdr_tlv(&buff_len);
 	ext_tcp_hdr	= (struct convert_extended_tcp_hdr *)buff;
 
 	opts = convert_parse_tlvs(buff,
@@ -238,8 +238,8 @@ START_TEST(test_convert_parse_tlvs_multiple){
 	size_t			buff_len, tlv1_len, tlv2_len;
 	uint8_t *		tlv1, *tlv2;
 
-	tlv1	= (uint8_t *)sample_convert_connect(&tlv1_len);
-	tlv2	= (uint8_t *)sample_convert_error(&tlv2_len);
+	tlv1	= (uint8_t *)sample_convert_connect_tlv(&tlv1_len);
+	tlv2	= (uint8_t *)sample_convert_error_tlv(&tlv2_len);
 
 	buff_len	= tlv1_len + tlv2_len;
 	buff		= malloc(buff_len);
@@ -260,9 +260,45 @@ START_TEST(test_convert_parse_tlvs_multiple){
 }
 END_TEST
 
-START_TEST(test_convert_write){
-	/* TODO */
-	ck_assert(1);
+START_TEST(test_convert_write_tlvs){
+	unsigned int		i, j;
+	size_t			tlv_orig_len, hdr_and_tlv_len;
+	uint8_t *		tlv_orig, *tlv_copy;
+	struct convert_opts *	opts;
+	ssize_t			ret;
+
+	uint8_t *(*tlv_builders[3])(size_t * len) = {
+		(uint8_t * (*)(size_t *))sample_convert_connect_tlv,
+		(uint8_t * (*)(size_t *))sample_convert_error_tlv,
+		(uint8_t * (*)(size_t *))sample_convert_tcp_ext_hdr_tlv
+	};
+
+	/* For each TLV type, we expect convert_write(convert_read(TLV)) == TLV,
+	 * modulo the Convert Header, as convert_write() preprends the Header,
+	 * while convert_read() accepts a buffer without the Convert Header.
+	 */
+	for (i = 0; i < sizeof(tlv_builders) / sizeof(void *); i++) {
+		tlv_orig	= tlv_builders[i](&tlv_orig_len);
+		opts		= convert_parse_tlvs(tlv_orig, tlv_orig_len);
+		hdr_and_tlv_len = tlv_orig_len + sizeof(struct convert_header);
+		uint8_t copy[hdr_and_tlv_len];
+		tlv_copy = copy + sizeof(struct convert_header);
+
+		ret = convert_write(copy, sizeof(copy), opts);
+		/* Cast to ssize_t is safe as tlv_orig_len < SSIZE_MAX */
+		ck_assert_msg(ret == ((ssize_t)hdr_and_tlv_len),
+		              "Should write size(Header)+size(TLV[%u]) bytes",
+		              i);
+
+		/* Verify copy TLV is a byte-per-byte copy of the original TLV */
+		for (j = 0; j < tlv_orig_len; ++j)
+			ck_assert_msg(tlv_orig[j] == tlv_copy[j],
+			              "Expected tlv_orig[%u][%u] == tlv_copy[%u][%u]",
+			              i, i, j, j);
+
+		convert_free_opts(opts);
+		free(tlv_orig);
+	}
 }
 END_TEST
 
@@ -282,7 +318,11 @@ convert_util_suite(void)
 	tcase_add_test(tc_core, test_convert_parse_tlvs_error);
 	tcase_add_test(tc_core, test_convert_parse_tlvs_ext_tcp_hdr);
 	tcase_add_test(tc_core, test_convert_parse_tlvs_multiple);
-	tcase_add_test(tc_core, test_convert_write);
+	tcase_add_test(tc_core, test_convert_write_tlvs);
+	/* TODO:
+	 *  - test Header part of convert_write()
+	 *  - test convert_write() with multiple TLVs
+	 */
 
 	suite_add_tcase(s, tc_core);
 
