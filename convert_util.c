@@ -242,12 +242,12 @@ static struct {
 	[_CONVERT_F_EXTENDED_TCP_HDR] =	 {
 		.flag	= CONVERT_F_EXTENDED_TCP_HDR,
 		.type	= CONVERT_EXTENDED_TCP_HDR,
-		.cb	= _convert_write_tlv_not_supp,
+		.cb	= _convert_write_tlv_extended_tcp_hdr,
 	},
 	[_CONVERT_F_SUPPORTED_TCP_EXT] = {
 		.flag	= CONVERT_F_SUPPORTED_TCP_EXT,
 		.type	= CONVERT_SUPPORTED_TCP_EXT,
-		.cb	= _convert_write_tlv_extended_tcp_hdr,
+		.cb	= _convert_write_tlv_not_supp,
 	},
 	[_CONVERT_F_COOKIE] =		 {
 		.flag	= CONVERT_F_COOKIE,
