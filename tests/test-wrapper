@@ -60,7 +60,7 @@ sleep 1
 
 
 COMMAND=$(test_step run_cmd)
-CONVERT_LOG=${TEST_CONVERT_LOG} CONVERT_ADDR=127.0.0.1 LD_PRELOAD="../libconvert.so" ${COMMAND} > ${TEST_OUTPUT_LOG} 2>&1 || true
+CONVERT_LOG=${TEST_CONVERT_LOG} CONVERT_ADDR=127.0.0.1 LD_PRELOAD="../libconvert_client.so" ${COMMAND} > ${TEST_OUTPUT_LOG} 2>&1 || true
 
 ret=$(test_step validate 2>&1 | tee ${TEST_VALIDATE_LOG})
 [ "${ret}" == "" ] && RETURN_CODE=0

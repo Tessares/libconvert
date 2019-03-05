@@ -46,7 +46,7 @@
 #define CONVERT_ALIGN(bytes) __ALIGN(bytes, CONVERT_PADDING)
 
 int
-convert_parse_header(const uint8_t *buff, size_t buff_len, size_t *tlv_length)
+convert_parse_header(const uint8_t *buff, size_t buff_len, size_t *tlvs_length)
 {
 	struct convert_header *hdr = (struct convert_header *)buff;
 
@@ -57,7 +57,7 @@ convert_parse_header(const uint8_t *buff, size_t buff_len, size_t *tlv_length)
 	if (hdr->version != CONVERT_VERSION)
 		return -1;
 
-	*tlv_length = CONVERT_TO_BYTES(hdr->total_length) - sizeof(*hdr);
+	*tlvs_length = CONVERT_TO_BYTES(hdr->total_length) - sizeof(*hdr);
 	return 0;
 }
 
