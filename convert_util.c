@@ -65,6 +65,7 @@ convert_parse_header(const uint8_t *buff, size_t buff_len, size_t *tlvs_length)
 void
 convert_free_opts(struct convert_opts *opts)
 {
+	free(opts->tcp_options);
 	free(opts);
 }
 
@@ -128,6 +129,27 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 			        conv_connect->remote_addr;
 			opts->remote_addr.sin6_port =
 			        conv_connect->remote_port;
+
+			break;
+		}
+		case CONVERT_EXTENDED_TCP_HDR: {
+			struct convert_extended_tcp_hdr *conv_ext_tcp_hdr =
+			        (struct convert_extended_tcp_hdr *)buff;
+			size_t tcp_options_len =
+			        tlv_len -
+			        sizeof(struct convert_extended_tcp_hdr);
+
+			if (buff_len < CONVERT_ALIGN(sizeof(*conv_ext_tcp_hdr)))
+				return NULL;
+
+			opts->flags |= CONVERT_F_EXTENDED_TCP_HDR;
+
+			opts->tcp_options_len	= tcp_options_len;
+			opts->tcp_options	= malloc(tcp_options_len);
+			if (opts->tcp_options == NULL)
+				return NULL;
+			memcpy(opts->tcp_options, conv_ext_tcp_hdr->tcp_options,
+			       tcp_options_len);
 
 			break;
 		}
