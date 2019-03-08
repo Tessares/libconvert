@@ -86,12 +86,12 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 		size_t			tlv_len;
 
 		if (buff_len < CONVERT_ALIGN(sizeof(*tlv)))
-			return NULL;
+			goto error_and_free;
 
 		tlv_len = CONVERT_TO_BYTES(tlv->length);
 
 		if (buff_len < tlv_len)
-			return NULL;
+			goto error_and_free;
 
 		switch (tlv->type) {
 		case CONVERT_ERROR: {
@@ -99,7 +99,7 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 			        (struct convert_error *)buff;
 
 			if (buff_len < CONVERT_ALIGN(sizeof(*error)))
-				return NULL;
+				goto error_and_free;
 
 			opts->flags		|= CONVERT_F_ERROR;
 			opts->error_code	= error->error_code;
@@ -112,12 +112,12 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 			        (struct convert_connect *)buff;
 
 			if (buff_len < CONVERT_ALIGN(sizeof(*conv_connect)))
-				return NULL;
+				goto error_and_free;
 
 			/* TODO support the options. */
 			if (CONVERT_TO_BYTES(conv_connect->length) !=
 			    CONVERT_ALIGN(sizeof(*conv_connect)))
-				return NULL;
+				goto error_and_free;
 
 			opts->flags |= CONVERT_F_CONNECT;
 			/* conv_connect comes from the network, and thus is in
@@ -140,14 +140,14 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 			        sizeof(struct convert_extended_tcp_hdr);
 
 			if (buff_len < CONVERT_ALIGN(sizeof(*conv_ext_tcp_hdr)))
-				return NULL;
+				goto error_and_free;
 
 			opts->flags |= CONVERT_F_EXTENDED_TCP_HDR;
 
 			opts->tcp_options_len	= tcp_options_len;
 			opts->tcp_options	= malloc(tcp_options_len);
 			if (opts->tcp_options == NULL)
-				return NULL;
+				goto error_and_free;
 			memcpy(opts->tcp_options, conv_ext_tcp_hdr->tcp_options,
 			       tcp_options_len);
 
@@ -155,7 +155,7 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 		}
 		/* TODO support other TLVs. */
 		default:
-			return NULL;
+			goto error_and_free;
 		}
 
 		buff		+= tlv_len;
@@ -163,6 +163,10 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 	}
 
 	return opts;
+
+error_and_free:
+	free(opts);
+	return NULL;
 }
 
 static ssize_t

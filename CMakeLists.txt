@@ -38,3 +38,9 @@ add_test(NAME cppcheck
                           --suppress=unusedStructMember ${LIBCONVERT_SOURCES}
          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 
+add_test(NAME scan-build
+         COMMAND bash -c "rm -rf scan-build && \
+                          mkdir scan-build && \
+                          cd scan-build && \
+                          scan-build-6.0 cmake ${PROJECT_SOURCE_DIR} && \
+                          scan-build-6.0 -v --status-bugs make")

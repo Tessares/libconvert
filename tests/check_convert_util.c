@@ -68,7 +68,8 @@ sample_convert_connect_tlv(size_t *len)
 struct convert_extended_tcp_hdr *
 sample_convert_tcp_ext_hdr_tlv(size_t *len)
 {
-	size_t tcp_opts_len = 8;
+	unsigned int	i		= 0;
+	size_t		tcp_opts_len	= 8;
 
 	*len = sizeof(struct convert_extended_tcp_hdr) + tcp_opts_len;
 	struct convert_extended_tcp_hdr *	ext_tcp_hdr	= malloc(*len);
@@ -78,6 +79,8 @@ sample_convert_tcp_ext_hdr_tlv(size_t *len)
 	tlv->length		= 3; /* In 32-bit words */
 	tlv->type		= CONVERT_EXTENDED_TCP_HDR;
 	ext_tcp_hdr->unassigned = 0;
+	for (i = 0; i < tcp_opts_len; i++)
+		ext_tcp_hdr->tcp_options[i] = rand() % 256;
 
 	return ext_tcp_hdr;
 }
