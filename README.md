@@ -53,6 +53,8 @@ $ cppcheck -I/usr/include -q --language=c --std=c99 --enable=warning,style,perfo
 To contribute to the Convert protocol, see this [Github repository](https://github.com/obonaventure/draft-tcp-converters), which tracks the evolution of the 0-RTT TCP Converter
 Internet draft.
 
+To ease troubleshooting, download the 0-RTT TCP Convert [Wireshark dissector plugin](https://github.com/Tessares/convert-wireshark-dissector).
+
 ### Contact
 
 * [Gregory Vander Schueren](mailto:gregory.vanderschueren@tessares.net)
