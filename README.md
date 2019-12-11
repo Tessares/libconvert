@@ -14,16 +14,24 @@ Future work:
 ### Requirements
 
 * Requires Linux >= 4.5 (leverages the TCP Fast Open infrastructure).
-* Configure `$ sysctl -w net.ipv4.tcp_fastopen=5` to enable sending data in the
-opening SYN, regardless of cookie availability.
-* Check the [CI build script](.travis.yml) for a complete list of deps (based on Ubuntu Xenial).
+* Configure `$ sysctl -w net.ipv4.tcp_fastopen=5` to enable sending data in the opening SYN, regardless of cookie availability.
 
 ### Build & usage
 
-Build with CMake:
+Fetch the Git submodules:
 ```
 $ git submodule init && git submodule update
-$ mkdir build && cd build && cmake .. && make
+```
+
+The easiest way to build and run the tests is with the provided Dockerfile (which contains all deps):
+```
+$ docker build -t tessares.net/libconvert .
+$ docker run --cap-add=NET_ADMIN --sysctl net.ipv4.tcp_fastopen=5 -v $PWD:/lc -t tessares.net/libconvert /bin/bash -c "mkdir /lc/build && cd /lc/build && cmake .. && make && make test"
+```
+
+Otherwise, assuming all deps are installed, build and run the tests with CMake as follows:
+```
+$ mkdir build && cd build && cmake .. && make && make test
 ```
 
 Usage (assuming a Transport Converter listening at 192.0.2.1:1234):
@@ -31,25 +39,13 @@ Usage (assuming a Transport Converter listening at 192.0.2.1:1234):
 $ CONVERT_ADDR=192.0.2.1 CONVERT_PORT=1234 LD_PRELOAD=./libconvert_client.so curl https://www.tessares.net
 ```
 
-Currently tested with `curl` & `wget` on both Centos 7 and Ubuntu 18.
-
-### Running the tests
-
-Requirements: check the [CI build script](.travis.yml) for complete list.
-
-In particular, it requires Python 3 and Scapy (make sure Scapy can run with root privileges).
-Also requires uncrustify, cppcheck and scan-build for the linting checks.
-
-Run as root as we need to sniff the loopback iface:
-```
-$ sudo make test
-```
+Currently tested with `curl` & `wget` on both Centos 7 and Ubuntu {16,18,19}
 
 ### Contributing
 
 Code contributions are more than welcome.
 
-Upon change, please run `uncrustify` (0.62) and validate that `cppcheck` is still happy:
+Upon change, please run `uncrustify` (0.68) and validate that `cppcheck` is still happy:
 ```
 $ uncrustify -c uncrustify.cfg -l C --replace --no-backup convert*.{h,c}
 $ cppcheck -I/usr/include -q --language=c --std=c99 --enable=warning,style,performance,portability -j "$(nproc)" --suppress=unusedStructMember ./convert*.{h,c}
