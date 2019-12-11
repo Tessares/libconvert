@@ -1,12 +1,15 @@
 language: c
 sudo: required
-dist: xenial
-install:
-    - sudo apt-get install -y cmake python3 python3-pip python3-setuptools pkg-config libcapstone-dev cppcheck curl wget check clang-tools-6.0
-    - sudo pip3 install scapy
-    - wget https://launchpad.net/~matttbe/+archive/ubuntu/ppa/+files/uncrustify_0.62-0ubuntu1~16.04~ricotz1_amd64.deb && sudo dpkg -i uncrustify_0.62-0ubuntu1~16.04~ricotz1_amd64.deb
-before_script:
-    - sudo sysctl -w net.ipv4.tcp_fastopen=5
+dist: bionic
+services:
+  - docker
+before_install:
+  - docker build -t tessares.net/libconvert .
 script:
-    - mkdir build && cd build && cmake .. && make
-    - sudo make test || { cat Testing/Temporary/LastTest.log && false; }
+  - >
+    sudo docker run \
+        --cap-add=NET_ADMIN \
+        --sysctl net.ipv4.tcp_fastopen=5 \
+        -v $PWD:/lc -t tessares.net/libconvert \
+        /bin/bash -c \
+            "mkdir /lc/build && cd /lc/build && cmake .. && make && make CTEST_OUTPUT_ON_FAILURE=1 test"
