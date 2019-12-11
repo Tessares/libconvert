@@ -555,7 +555,7 @@ _validate_kernel_version(char *err_buf, size_t len)
 	log_debug("kernel base version: %d.%d", version, major);
 
 	/* The TCP stack will acknowledge data sent in the SYN+ACK. */
-	if (version >= 4 && major >= 5)
+	if (version > 4 || (version == 4 && major >= 5))
 		return 0;
 
 	snprintf(err_buf, len, "need at least kernel 4.5 to run this correctly");
