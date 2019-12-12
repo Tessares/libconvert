@@ -96,7 +96,7 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 		switch (tlv->type) {
 		case CONVERT_ERROR: {
 			struct convert_error *error =
-			        (struct convert_error *)buff;
+				(struct convert_error *)buff;
 
 			if (buff_len < CONVERT_ALIGN(sizeof(*error)))
 				goto error_and_free;
@@ -109,7 +109,7 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 		}
 		case CONVERT_CONNECT: {
 			struct convert_connect *conv_connect =
-			        (struct convert_connect *)buff;
+				(struct convert_connect *)buff;
 
 			if (buff_len < CONVERT_ALIGN(sizeof(*conv_connect)))
 				goto error_and_free;
@@ -126,18 +126,18 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 			 * order.
 			 */
 			opts->remote_addr.sin6_addr =
-			        conv_connect->remote_addr;
+				conv_connect->remote_addr;
 			opts->remote_addr.sin6_port =
-			        conv_connect->remote_port;
+				conv_connect->remote_port;
 
 			break;
 		}
 		case CONVERT_EXTENDED_TCP_HDR: {
 			struct convert_extended_tcp_hdr *conv_ext_tcp_hdr =
-			        (struct convert_extended_tcp_hdr *)buff;
+				(struct convert_extended_tcp_hdr *)buff;
 			size_t tcp_options_len =
-			        tlv_len -
-			        sizeof(struct convert_extended_tcp_hdr);
+				tlv_len -
+				sizeof(struct convert_extended_tcp_hdr);
 
 			if (buff_len < CONVERT_ALIGN(sizeof(*conv_ext_tcp_hdr)))
 				goto error_and_free;
@@ -182,7 +182,7 @@ _convert_write_tlv_connect(uint8_t *buff, size_t buff_len,
 {
 	struct convert_connect *conv_connect	= (struct convert_connect *)buff;
 	size_t			length		=
-	        CONVERT_ALIGN(sizeof(*conv_connect));
+		CONVERT_ALIGN(sizeof(*conv_connect));
 
 	if (buff_len < length)
 		return -1;
@@ -213,9 +213,9 @@ _convert_write_tlv_extended_tcp_hdr(uint8_t *buff, size_t buff_len,
                                     const struct convert_opts *opts)
 {
 	struct convert_extended_tcp_hdr *ext_tcp_hdr =
-	        (struct convert_extended_tcp_hdr *)buff;
+		(struct convert_extended_tcp_hdr *)buff;
 	size_t length = CONVERT_ALIGN(
-	        sizeof(*ext_tcp_hdr) + opts->tcp_options_len);
+		sizeof(*ext_tcp_hdr) + opts->tcp_options_len);
 
 	if (buff_len < length)
 		return -1;

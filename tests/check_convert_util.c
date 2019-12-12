@@ -74,7 +74,7 @@ sample_convert_tcp_ext_hdr_tlv(size_t *len)
 	*len = sizeof(struct convert_extended_tcp_hdr) + tcp_opts_len;
 	struct convert_extended_tcp_hdr *	ext_tcp_hdr	= malloc(*len);
 	struct convert_tlv *			tlv		=
-	        (struct convert_tlv *)ext_tcp_hdr;
+		(struct convert_tlv *)ext_tcp_hdr;
 
 	tlv->length		= 3; /* In 32-bit words */
 	tlv->type		= CONVERT_EXTENDED_TCP_HDR;
@@ -166,9 +166,9 @@ START_TEST (test_convert_parse_tlvs_connect) {
 	unsigned int i = 0;
 	for (i = 0; i < sizeof(opts->remote_addr.sin6_addr.s6_addr); ++i)
 		ck_assert_msg(
-		        opts->remote_addr.sin6_addr.s6_addr[i] ==
-		        connect->remote_addr.s6_addr[i],
-		        "Should parse remote_addr");
+			opts->remote_addr.sin6_addr.s6_addr[i] ==
+			connect->remote_addr.s6_addr[i],
+			"Should parse remote_addr");
 
 	convert_free_opts(opts);
 	free(buff);
@@ -227,8 +227,8 @@ START_TEST (test_convert_parse_tlvs_ext_tcp_hdr) {
 
 	for (i = 0; i < tcp_opts_len; ++i)
 		ck_assert_msg(
-		        opts->tcp_options[i] == ext_tcp_hdr->tcp_options[i],
-		        "Should return exact copy TCP options");
+			opts->tcp_options[i] == ext_tcp_hdr->tcp_options[i],
+			"Should return exact copy TCP options");
 
 	convert_free_opts(opts);
 	free(buff);
@@ -264,8 +264,8 @@ START_TEST (test_convert_parse_tlvs_multiple) {
 END_TEST
 
 START_TEST (test_convert_write_tlvs) {
-	unsigned int i;
-	uint8_t *(*tlv_builders[3])(size_t * len) = {
+	unsigned int	i;
+	uint8_t *	(*tlv_builders[3])(size_t *len) = {
 		(uint8_t * (*)(size_t *))sample_convert_connect_tlv,
 		(uint8_t * (*)(size_t *))sample_convert_error_tlv,
 		(uint8_t * (*)(size_t *))sample_convert_tcp_ext_hdr_tlv
