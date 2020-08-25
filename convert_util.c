@@ -34,17 +34,8 @@
 
 #include "convert_util.h"
 
-#define CONVERT_PADDING 4
-
 #define CONVERT_TO_BYTES(v) (v * CONVERT_PADDING)
 #define BYTES_TO_CONVERT(v) (v / CONVERT_PADDING)
-
-/* The TLVs in the converter headers are padded to align to 4
- * bytes. These macros are helper functions to compute the expected
- * padded length. Eg. returns 4 for 3, 8 for 5, etc.
- */
-#define __ALIGN(x, a) (((x) + (a - 1)) & ~(a - 1))
-#define CONVERT_ALIGN(bytes) __ALIGN(bytes, CONVERT_PADDING)
 
 int
 convert_parse_header(const uint8_t *buff, size_t buff_len, size_t *tlvs_length)

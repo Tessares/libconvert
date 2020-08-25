@@ -42,6 +42,14 @@
 #endif
 #endif
 
+/* The TLVs in the converter headers are padded to align to 4
+ * bytes. These macros are helper functions to compute the expected
+ * padded length. Eg. returns 4 for 3, 8 for 5, etc.
+ */
+#define CONVERT_PADDING 4
+#define __CONVERT_ALIGN(x, a) (((x) + (a - 1)) & ~(a - 1))
+#define CONVERT_ALIGN(bytes) __CONVERT_ALIGN(bytes, CONVERT_PADDING)
+
 enum {
 	_CONVERT_F_INFO = 0,
 	_CONVERT_F_CONNECT,
