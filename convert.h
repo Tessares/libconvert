@@ -38,6 +38,7 @@
 #include <netinet/in.h>
 
 #define CONVERT_VERSION 1
+#define CONVERT_MAGIC_NO 0x2263
 
 enum {
 	CONVERT_INFO			= 0x1,
@@ -51,7 +52,7 @@ enum {
 struct convert_header {
 	uint8_t		version;
 	uint8_t		total_length;
-	uint16_t	unassigned;
+	uint16_t	magic_no;
 } __attribute__((packed));
 
 struct convert_tlv {

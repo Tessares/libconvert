@@ -58,6 +58,9 @@ convert_parse_header(const uint8_t *buff, size_t buff_len, size_t *tlvs_length)
 	if (hdr->version != CONVERT_VERSION)
 		return -1;
 
+	if (ntohs(hdr->magic_no) != CONVERT_MAGIC_NO)
+		return -1;
+
 	*tlvs_length = CONVERT_TO_BYTES(hdr->total_length) - sizeof(*hdr);
 	return 0;
 }
@@ -310,12 +313,13 @@ convert_write(uint8_t *buff, size_t buff_len, const struct convert_opts *opts)
 	if (buff_len < length)
 		return -1;
 
-	hdr->version = CONVERT_VERSION;
+	hdr->version	= CONVERT_VERSION;
+	hdr->magic_no	= htons(CONVERT_MAGIC_NO);
 
 	/* iterate over the opts->flags */
 	ret = _convert_write_tlvs(buff + length, buff_len - length, opts);
 	if (ret < 0)
-		return -1;
+		return ret;
 
 	length			+= (size_t)ret;
 	hdr->total_length	= BYTES_TO_CONVERT(length);
