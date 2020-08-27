@@ -45,7 +45,7 @@ class Convert(Packet):
     fields_desc = [ByteField("version", 1),
                    FieldLenField("total_length", None, length_of="tlvs",
                                  fmt="B", adjust=lambda _, l: int(1 + l / 4)),
-                   ShortField("reserved", 0),
+                   ShortField("magic_no", 8803),
                    PacketListField("tlvs", None, ConvertTLV)]
 
 

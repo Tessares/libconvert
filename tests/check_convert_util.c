@@ -102,6 +102,7 @@ START_TEST (test_convert_parse_header) {
 	ck_assert_msg(ret == -1, "Should fail: unsupported version");
 
 	hdr.version		= CONVERT_VERSION;
+	hdr.magic_no		= htons(CONVERT_MAGIC_NO);
 	hdr.total_length	= 2;
 	ret			= convert_parse_header(buff, sizeof(hdr),
 	                                               &tlvs_length);

@@ -34,17 +34,8 @@
 
 #include "convert_util.h"
 
-#define CONVERT_PADDING 4
-
 #define CONVERT_TO_BYTES(v) (v * CONVERT_PADDING)
 #define BYTES_TO_CONVERT(v) (v / CONVERT_PADDING)
-
-/* The TLVs in the converter headers are padded to align to 4
- * bytes. These macros are helper functions to compute the expected
- * padded length. Eg. returns 4 for 3, 8 for 5, etc.
- */
-#define __ALIGN(x, a) (((x) + (a - 1)) & ~(a - 1))
-#define CONVERT_ALIGN(bytes) __ALIGN(bytes, CONVERT_PADDING)
 
 int
 convert_parse_header(const uint8_t *buff, size_t buff_len, size_t *tlvs_length)
@@ -56,6 +47,9 @@ convert_parse_header(const uint8_t *buff, size_t buff_len, size_t *tlvs_length)
 
 	/* only support a single version */
 	if (hdr->version != CONVERT_VERSION)
+		return -1;
+
+	if (ntohs(hdr->magic_no) != CONVERT_MAGIC_NO)
 		return -1;
 
 	*tlvs_length = CONVERT_TO_BYTES(hdr->total_length) - sizeof(*hdr);
@@ -310,12 +304,13 @@ convert_write(uint8_t *buff, size_t buff_len, const struct convert_opts *opts)
 	if (buff_len < length)
 		return -1;
 
-	hdr->version = CONVERT_VERSION;
+	hdr->version	= CONVERT_VERSION;
+	hdr->magic_no	= htons(CONVERT_MAGIC_NO);
 
 	/* iterate over the opts->flags */
 	ret = _convert_write_tlvs(buff + length, buff_len - length, opts);
 	if (ret < 0)
-		return -1;
+		return ret;
 
 	length			+= (size_t)ret;
 	hdr->total_length	= BYTES_TO_CONVERT(length);

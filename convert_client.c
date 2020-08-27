@@ -71,7 +71,7 @@ typedef struct socket_state {
 } socket_state_t;
 
 #define NUM_BUCKETS 1024
-static LIST_HEAD(, socket_state) _socket_htable[NUM_BUCKETS];
+static LIST_HEAD(socket_htbl_t, socket_state) _socket_htable[NUM_BUCKETS];
 /* note: global hash table mutex, improvement: lock per bucket */
 static pthread_mutex_t _socket_htable_mutex = PTHREAD_MUTEX_INITIALIZER;
 

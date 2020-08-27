@@ -38,6 +38,7 @@
 #include <netinet/in.h>
 
 #define CONVERT_VERSION 1
+#define CONVERT_MAGIC_NO 0x2263
 
 enum {
 	CONVERT_INFO			= 0x1,
@@ -48,10 +49,23 @@ enum {
 	CONVERT_ERROR			= 0x1e,
 };
 
+enum {
+	CONVERT_ERROR_UNSUPPORTED_VERSION	= 0,
+	CONVERT_ERROR_MALFORMED_MSG		= 1,
+	CONVERT_ERROR_UNSUPPORTED_MSG		= 2,
+	CONVERT_ERROR_MISSING_COOKIE		= 3,
+	CONVERT_ERROR_UNAUTHORIZED		= 32,
+	CONVERT_ERROR_UNSUPPORTED_TCP_OPT	= 33,
+	CONVERT_ERROR_RESOURCE_EXCEEDED		= 64,
+	CONVERT_ERROR_NETWORK_FAILURE		= 65,
+	CONVERT_ERROR_CONN_RESET		= 96,
+	CONVERT_ERROR_DEST_UNREACH		= 97,
+};
+
 struct convert_header {
 	uint8_t		version;
 	uint8_t		total_length;
-	uint16_t	unassigned;
+	uint16_t	magic_no;
 } __attribute__((packed));
 
 struct convert_tlv {
