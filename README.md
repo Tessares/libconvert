@@ -36,7 +36,7 @@ $ mkdir -p build && cd build && cmake .. && make && make test
 
 Usage (assuming a Transport Converter listening at 192.0.2.1:1234):
 ```
-$ CONVERT_LOG=/tmp/converter.log CONVERT_ADDR=192.0.2.1 CONVERT_PORT=1234 LD_PRELOAD=./libconvert_client.so curl https://www.tessares.net
+$ CONVERT_LOG=/tmp/converter.log CONVERT_ADDR=192.0.2.1 CONVERT_PORT=1234 LD_LIBRARY_PATH=$PWD/build LD_PRELOAD=libconvert_client.so curl https://www.tessares.net
 ```
 
 Currently tested with `curl` & `wget` on both Centos 7 and Ubuntu {16,18,19}
