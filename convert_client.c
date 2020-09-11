@@ -52,7 +52,7 @@
 #include "convert_util.h"
 #include "bsd_queue.h"
 
-#define CONVERT_PORT 1234
+#define CONVERT_PORT "1234"
 
 /* The hook function registered in libsyscall_intercept must return either
  * of the following value. */
@@ -75,9 +75,8 @@ static LIST_HEAD(socket_htbl_t, socket_state) _socket_htable[NUM_BUCKETS];
 /* note: global hash table mutex, improvement: lock per bucket */
 static pthread_mutex_t _socket_htable_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static struct in_addr	_convert_addr4;
-static struct in6_addr	_convert_addr6;
-static uint16_t		_convert_port = CONVERT_PORT;
+static struct addrinfo *_converter_addr;
+static const char *	_convert_port = CONVERT_PORT;
 
 static FILE *		_log;
 static pthread_mutex_t	_log_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -206,8 +205,7 @@ _redirect_connect_tlv(uint8_t *buf, size_t buf_len, struct sockaddr *addr)
 }
 
 static int
-_redirect(socket_state_t *state, struct sockaddr *addr, socklen_t addr_len,
-          struct sockaddr *dest)
+_redirect(socket_state_t *state, struct sockaddr *dest)
 {
 	uint8_t buf[1024];
 	ssize_t len;
@@ -218,33 +216,8 @@ _redirect(socket_state_t *state, struct sockaddr *addr, socklen_t addr_len,
 		return len;
 
 	return syscall_no_intercept(SYS_sendto, state->fd, buf, len,
-	                            MSG_FASTOPEN, addr, addr_len);
-}
-
-static int
-_redirect4(socket_state_t *state, struct sockaddr *dest)
-{
-	struct sockaddr_in addr =
-	{
-		.sin_family	= AF_INET,
-		.sin_port	= htons(_convert_port),
-		.sin_addr	= _convert_addr4,
-	};
-
-	return _redirect(state, (struct sockaddr *)&addr, sizeof(addr), dest);
-}
-
-static int
-_redirect6(socket_state_t *state, struct sockaddr *dest)
-{
-	struct sockaddr_in6 addr =
-	{
-		.sin6_family	= AF_INET6,
-		.sin6_port	= htons(_convert_port),
-		.sin6_addr	= _convert_addr6,
-	};
-
-	return _redirect(state, (struct sockaddr *)&addr, sizeof(addr), dest);
+	                            MSG_FASTOPEN, _converter_addr->ai_addr,
+	                            _converter_addr->ai_addrlen);
 }
 
 static int
@@ -254,8 +227,14 @@ _handle_socket(long arg0, long arg1, long arg2, long *result)
 	if (((arg0 == AF_INET) || (arg0 == AF_INET6)) && (arg1 == SOCK_STREAM)) {
 		log_debug("handle socket(%ld, %ld, %ld)", arg0, arg1, arg2);
 
-		/* execute the socket() syscall to learn the file descriptor */
-		*result = syscall_no_intercept(SYS_socket, arg0, arg1, arg2);
+		/* Execute the socket() syscall to learn the file descriptor.
+		 * Transform the domain to IPv4 or IPv6 depending on the
+		 * Converter address family (address families of end-server
+		 * and of Converter don't have to match).
+		 */
+		*result = syscall_no_intercept(SYS_socket,
+		                               _converter_addr->ai_family,
+		                               arg1, arg2);
 
 		log_debug("-> fd: %d", (int)*result);
 
@@ -371,10 +350,8 @@ _handle_connect(long arg0, long arg1, UNUSED long arg2, long *result)
 
 	switch (dest->sa_family) {
 	case AF_INET:
-		*result = _redirect4(state, dest);
-		break;
 	case AF_INET6:
-		*result = _redirect6(state, dest);
+		*result = _redirect(state, dest);
 		break;
 	default:
 		log_warn("fd %d specified an invalid address family %d", fd,
@@ -562,81 +539,6 @@ _validate_kernel_version(char *err_buf, size_t len)
 	return -1;
 }
 
-static void
-_set_convert_addr(struct hostent *host, void *buf, size_t buf_len)
-{
-	if (host->h_addr_list[0])
-		memcpy(buf, host->h_addr_list[0], buf_len);
-}
-
-static int
-_validate_and_set_conver_addr_num(const char *name)
-{
-	struct addrinfo *	ai;
-	int			ret;
-
-	ret = getaddrinfo(name, NULL, NULL, &ai);
-	if (ret < 0)
-		return ret;
-
-	/* name is an IP address */
-	switch (ai->ai_family) {
-	case AF_INET:
-		_convert_addr4 = ((struct sockaddr_in *)ai->ai_addr)->sin_addr;
-		break;
-	case AF_INET6:
-		memcpy(&_convert_addr6,
-		       &((struct sockaddr_in6 *)ai->ai_addr)->sin6_addr,
-		       sizeof(_convert_addr6));
-		break;
-	default:
-		return -1;
-	}
-
-	freeaddrinfo(ai);
-	return 0;
-}
-
-
-static int
-_validate_and_set_convert_addr(const char *name)
-{
-	struct hostent *host;
-	int		count = 0;
-	char		addr_str[INET6_ADDRSTRLEN];
-
-	if (_validate_and_set_conver_addr_num(name) == 0)
-		return 0;
-
-	host = gethostbyname2(name, AF_INET);
-	if (!host)
-		goto inet6;
-
-	_set_convert_addr(host, &_convert_addr4,
-	                  sizeof(_convert_addr4));
-
-	inet_ntop(AF_INET, &_convert_addr4, addr_str, sizeof(addr_str));
-	log_info("using convert address: %s for ipv4 connections", addr_str);
-
-	count++;
-
-inet6:
-	host = gethostbyname2(name, AF_INET6);
-	if (!host)
-		goto exit;
-
-	_set_convert_addr(host, &_convert_addr6,
-	                  sizeof(_convert_addr6));
-
-	inet_ntop(AF_INET6, &_convert_addr6, addr_str, sizeof(addr_str));
-	log_info("using convert address: %s for ipv6 connections", addr_str);
-
-	count++;
-
-exit:
-	return count ? 0 : -1;
-}
-
 static int
 _validate_parameters(char *err_buf, size_t len)
 {
@@ -650,29 +552,29 @@ _validate_parameters(char *err_buf, size_t len)
 	}
 
 	/* resolve address */
-	if (_validate_and_set_convert_addr(convert_addr) < 0) {
+	if (getaddrinfo(convert_addr, _convert_port, NULL,
+	                &_converter_addr) != 0) {
 		snprintf(err_buf, len, "unable to resolve '%s'", convert_addr);
 		return -1;
 	}
 
 	/* set port */
 	if (convert_port) {
-		char *		endp;
-		uint16_t	port;
+		char *endp;
 
 		/* contains a base 10 number */
-		port = strtol(convert_port, &endp, 10);
+		strtol(convert_port, &endp, 10);
 
 		if (*endp && *endp != '\n')
 			log_warn(
 				"unable to parse port: %s. Falling back to default port.",
 				convert_port);
 		else
-			_convert_port = port;
+			_convert_port = convert_port;
 	}
 
-	log_info("using port %zu to connect to the convert service",
-	         _convert_port);
+	log_info("connecting to convert service at %s:%s",
+	         convert_addr, _convert_port);
 
 	return 0;
 }
@@ -734,6 +636,9 @@ static __attribute__((destructor)) void
 fini(void)
 {
 	log_info("Terminating interception");
+
+	freeaddrinfo(_converter_addr);
+
 	if (_log)
 		fclose(_log);
 }
