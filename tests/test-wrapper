@@ -8,6 +8,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 CONVERT_SCRIPT="$1"
+IP_VERSION="$2"
 
 export TEST_CONVERT_LOG=convert.log
 export TEST_OUTPUT_LOG=output.log
@@ -19,7 +20,12 @@ SCAPY_PID=
 RETURN_CODE=1
 
 test_step() {
-    PYTHONPATH="${PYTHONPATH}:${TOP_SOURCE_DIR}/scapy" "${SOURCE_DIR}/${CONVERT_SCRIPT}" "$1"
+    PYTHONPATH="${PYTHONPATH}:${TOP_SOURCE_DIR}/scapy" "${SOURCE_DIR}/${CONVERT_SCRIPT}" "$1" "${IP_VERSION}"
+}
+
+iptables_both() {
+    iptables "${@}"
+    ip6tables "${@}"
 }
 
 cleanup() {
@@ -29,7 +35,7 @@ cleanup() {
     set +e
 
     # remove firewall rule
-    iptables -D INPUT -i lo -p tcp --dport 1234 -j DROP
+    iptables_both -D INPUT -i lo -p tcp --dport 1234 -j DROP
 
     # kill scapy server if still runing
     [ -n "${SCAPY_PID}" ] && kill "${SCAPY_PID}" 2> /dev/null
@@ -47,10 +53,11 @@ cleanup() {
 trap cleanup EXIT
 
 # prevent the stack to send RST for packets handled by Scapy.
-iptables -I INPUT -i lo -p tcp --dport 1234 -j DROP
+iptables_both -I INPUT -i lo -p tcp --dport 1234 -j DROP
 
 # make sure that TFO cache is disabled :)
-ip tcp_metrics flush
+ip -4 tcp_metrics flush
+ip -6 tcp_metrics flush
 
 # run the scapy server
 test_step server > "${TEST_CONVERT_MOCK_LOG}" 2>&1 &
@@ -58,9 +65,14 @@ SCAPY_PID=$!
 
 sleep 1
 
+if [[ ${IP_VERSION} == '6' ]]; then
+	CONVERT_ADDR="::1/128"
+else
+	CONVERT_ADDR="127.0.0.1"
+fi
 
 COMMAND=$(test_step run_cmd)
-CONVERT_LOG=${TEST_CONVERT_LOG} CONVERT_ADDR=127.0.0.1 LD_PRELOAD="../libconvert_client.so" ${COMMAND} > ${TEST_OUTPUT_LOG} 2>&1 || true
+CONVERT_LOG=${TEST_CONVERT_LOG} CONVERT_ADDR=${CONVERT_ADDR} LD_PRELOAD="../libconvert_client.so" ${COMMAND} > ${TEST_OUTPUT_LOG} 2>&1 || true
 
 ret=$(test_step validate 2>&1 | tee ${TEST_VALIDATE_LOG})
 [ "${ret}" == "" ] && RETURN_CODE=0

@@ -5,13 +5,13 @@ from test_lib import *
 
 
 class TestError(TestInstance):
-    def run(self):
+    def server(self):
         converter = Convert(tlvs=[ConvertTLV_Error(error_code=1)])
         print(converter.build())
 
         class MockConverterError(MockConverter):
             actions = [RecvSyn(), SendSynAck(payload=converter.build()), Wait(1), SendPkt(flags='R')]
-        MockConverterError()
+        MockConverterError(address=self.converter_adress())
 
     def validate(self):
         self.assert_error_result()
