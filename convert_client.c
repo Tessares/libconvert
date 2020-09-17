@@ -551,13 +551,6 @@ _validate_parameters(char *err_buf, size_t len)
 		return -1;
 	}
 
-	/* resolve address */
-	if (getaddrinfo(convert_addr, _convert_port, NULL,
-	                &_converter_addr) != 0) {
-		snprintf(err_buf, len, "unable to resolve '%s'", convert_addr);
-		return -1;
-	}
-
 	/* set port */
 	if (convert_port) {
 		char *endp;
@@ -571,6 +564,13 @@ _validate_parameters(char *err_buf, size_t len)
 				convert_port);
 		else
 			_convert_port = convert_port;
+	}
+
+	/* resolve address */
+	if (getaddrinfo(convert_addr, _convert_port, NULL,
+	                &_converter_addr) != 0) {
+		snprintf(err_buf, len, "unable to resolve '%s'", convert_addr);
+		return -1;
 	}
 
 	log_info("connecting to convert service at %s:%s",
