@@ -188,8 +188,7 @@ _redirect_connect_tlv(uint8_t *buf, size_t buf_len, struct sockaddr *addr)
 		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)addr;
 
 		/* already in network bytes */
-		memcpy(&opts.remote_addr, &in6->sin6_addr,
-		       sizeof(opts.remote_addr));
+		memcpy(&opts.remote_addr, in6, sizeof(opts.remote_addr));
 		break;
 	}
 	default:
