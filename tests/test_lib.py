@@ -3,17 +3,21 @@ import os
 
 
 class curl:
-    COMMAND = "curl -4 http://www.tessares.net/ -s -S -o -"
+    def print_cmd(ip_version):
+        return "curl -%s http://www.tessares.net/ -s -S -o -" % ip_version
+
     ERROR_MATCH = "Connection reset by peer"
 
 
 class wget:
-    COMMAND = "wget -4 http://www.tessares.net/ -t1 -O -"
+    def print_cmd(ip_version):
+        return "wget -%s http://www.tessares.net/ -t1 -O -" % ip_version
+
     ERROR_MATCH = "failed: Connection refused."
 
 
 class TestInstance:
-    def run(self):
+    def server(self):
         raise NotImplemented()
 
     def validate(self):
@@ -25,7 +29,7 @@ class TestInstance:
 
     def run_cmd(self):
         klass = self._cmd()
-        print(klass.COMMAND)
+        print(klass.print_cmd(self.ip_version))
 
     def _get_result(self):
         with open(os.environ["TEST_OUTPUT_LOG"]) as f:
@@ -45,13 +49,21 @@ class TestInstance:
     def assert_log_contains(self, log):
         assert log in self._get_log(), "Couldn't find '{}' in log".format(log)
 
+    def converter_adress(self):
+        if self.ip_version == '6':
+            return '::1/128'
+        else:
+            return '127.0.0.1'
+
     def __init__(self):
         if len(sys.argv) < 2:
             raise Exception("don't run this manually")
 
         action = sys.argv[1]
+        self.ip_version = sys.argv[2]
+
         {
-            'server': lambda: self.run(),
+            'server': lambda: self.server(),
             'validate': lambda: self.validate(),
             'run_cmd': lambda: self.run_cmd(),
         }[action]()
