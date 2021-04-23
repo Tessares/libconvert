@@ -94,7 +94,7 @@ struct convert_supported_opts {
 struct convert_cookie {
 	struct convert_tlv	tlv_hdr;
 	uint16_t		reserved;
-	uint32_t		opaque[0];
+	uint8_t			opaque[0];
 } __attribute__((packed));
 
 struct convert_error {

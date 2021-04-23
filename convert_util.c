@@ -60,6 +60,7 @@ void
 convert_free_opts(struct convert_opts *opts)
 {
 	free(opts->tcp_options);
+	free(opts->cookie_data);
 	free(opts);
 }
 
@@ -144,6 +145,22 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 				goto error_and_free;
 			memcpy(opts->tcp_options, conv_ext_tcp_hdr->tcp_options,
 			       tcp_options_len);
+
+			break;
+		}
+		case CONVERT_COOKIE: {
+			struct convert_cookie *cookie =
+				(struct convert_cookie *)buff;
+			size_t cookie_len =
+				tlv_len - sizeof(struct convert_cookie);
+
+			opts->flags |= CONVERT_F_COOKIE;
+
+			opts->cookie_len	= cookie_len;
+			opts->cookie_data	= malloc(cookie_len);
+			if (opts->cookie_data == NULL)
+				goto error_and_free;
+			memcpy(opts->cookie_data, cookie->opaque, cookie_len);
 
 			break;
 		}
