@@ -238,6 +238,23 @@ _convert_write_tlv_extended_tcp_hdr(uint8_t *buff, size_t buff_len,
 	return length;
 }
 
+static ssize_t
+_convert_write_tlv_cookie(uint8_t *buff, size_t buff_len,
+                          const struct convert_opts *opts)
+{
+	struct convert_cookie * cookie	= (struct convert_cookie *)buff;
+	size_t			length	= CONVERT_ALIGN(sizeof(*cookie) +
+	                                                opts->cookie_len);
+
+	if (buff_len < length)
+		return -1;
+
+	memset(cookie, '\0', length);
+	memcpy(cookie->opaque, opts->cookie_data, opts->cookie_len);
+
+	return length;
+}
+
 static struct {
 	uint32_t	flag;
 	uint8_t		type;
@@ -267,7 +284,7 @@ static struct {
 	[_CONVERT_F_COOKIE] =		 {
 		.flag	= CONVERT_F_COOKIE,
 		.type	= CONVERT_COOKIE,
-		.cb	= _convert_write_tlv_not_supp,
+		.cb	= _convert_write_tlv_cookie,
 	},
 	[_CONVERT_F_ERROR] =		 {
 		.flag	= CONVERT_F_ERROR,

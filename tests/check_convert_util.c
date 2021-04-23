@@ -316,10 +316,11 @@ END_TEST
 
 START_TEST (test_convert_write_tlvs) {
 	unsigned int	i;
-	uint8_t *	(*tlv_builders[3])(size_t *len) = {
+	uint8_t *	(*tlv_builders[4])(size_t *len) = {
 		(uint8_t * (*)(size_t *))sample_convert_connect_tlv,
 		(uint8_t * (*)(size_t *))sample_convert_error_tlv,
-		(uint8_t * (*)(size_t *))sample_convert_tcp_ext_hdr_tlv
+		(uint8_t * (*)(size_t *))sample_convert_tcp_ext_hdr_tlv,
+		(uint8_t * (*)(size_t *))sample_convert_cookie_tlv,
 	};
 
 	/* For each TLV type, we expect convert_write(convert_read(TLV)) == TLV,
