@@ -109,7 +109,7 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 				goto error_and_free;
 
 			/* TODO support the options. */
-			if (CONVERT_TO_BYTES(conv_connect->length) !=
+			if (CONVERT_TO_BYTES(tlv->length) !=
 			    CONVERT_ALIGN(sizeof(*conv_connect)))
 				goto error_and_free;
 

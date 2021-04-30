@@ -74,45 +74,39 @@ struct convert_tlv {
 } __attribute__((packed));
 
 struct convert_connect {
-	uint8_t		type;
-	uint8_t		length;
-	uint16_t	remote_port;
-	struct in6_addr remote_addr;
-	uint8_t		options[0];
+	struct convert_tlv	tlv_hdr;
+	uint16_t		remote_port;
+	struct in6_addr		remote_addr;
+	uint8_t			options[0];
 } __attribute__((packed));
 
 struct convert_info {
-	uint8_t		type;
-	uint8_t		length;
-	uint16_t	reserved;
+	struct convert_tlv	tlv_hdr;
+	uint16_t		reserved;
 } __attribute__((packed));
 
 struct convert_supported_opts {
-	uint8_t		type;
-	uint8_t		length;
-	uint16_t	reserved;
-	uint8_t		options_kind[0];
+	struct convert_tlv	tlv_hdr;
+	uint16_t		reserved;
+	uint8_t			options_kind[0];
 } __attribute__((packed));
 
 struct convert_cookie {
-	uint8_t		type;
-	uint8_t		length;
-	uint16_t	reserved;
-	uint32_t	opaque[0];
+	struct convert_tlv	tlv_hdr;
+	uint16_t		reserved;
+	uint32_t		opaque[0];
 } __attribute__((packed));
 
 struct convert_error {
-	uint8_t type;
-	uint8_t length;
-	uint8_t error_code;
-	uint8_t value[0];
+	struct convert_tlv	tlv_hdr;
+	uint8_t			error_code;
+	uint8_t			value[0];
 } __attribute__((packed));
 
 struct convert_extended_tcp_hdr {
-	uint8_t		type;
-	uint8_t		length;
-	uint16_t	unassigned;
-	uint8_t		tcp_options[0];
+	struct convert_tlv	tlv_hdr;
+	uint16_t		unassigned;
+	uint8_t			tcp_options[0];
 } __attribute__((packed));
 
 #endif
