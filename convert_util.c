@@ -60,6 +60,7 @@ void
 convert_free_opts(struct convert_opts *opts)
 {
 	free(opts->tcp_options);
+	free(opts->cookie_data);
 	free(opts);
 }
 
@@ -109,7 +110,7 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 				goto error_and_free;
 
 			/* TODO support the options. */
-			if (CONVERT_TO_BYTES(conv_connect->length) !=
+			if (CONVERT_TO_BYTES(tlv->length) !=
 			    CONVERT_ALIGN(sizeof(*conv_connect)))
 				goto error_and_free;
 
@@ -144,6 +145,22 @@ convert_parse_tlvs(const uint8_t *buff, size_t buff_len)
 				goto error_and_free;
 			memcpy(opts->tcp_options, conv_ext_tcp_hdr->tcp_options,
 			       tcp_options_len);
+
+			break;
+		}
+		case CONVERT_COOKIE: {
+			struct convert_cookie *cookie =
+				(struct convert_cookie *)buff;
+			size_t cookie_len =
+				tlv_len - sizeof(struct convert_cookie);
+
+			opts->flags |= CONVERT_F_COOKIE;
+
+			opts->cookie_len	= cookie_len;
+			opts->cookie_data	= malloc(cookie_len);
+			if (opts->cookie_data == NULL)
+				goto error_and_free;
+			memcpy(opts->cookie_data, cookie->opaque, cookie_len);
 
 			break;
 		}
@@ -221,6 +238,23 @@ _convert_write_tlv_extended_tcp_hdr(uint8_t *buff, size_t buff_len,
 	return length;
 }
 
+static ssize_t
+_convert_write_tlv_cookie(uint8_t *buff, size_t buff_len,
+                          const struct convert_opts *opts)
+{
+	struct convert_cookie * cookie	= (struct convert_cookie *)buff;
+	size_t			length	= CONVERT_ALIGN(sizeof(*cookie) +
+	                                                opts->cookie_len);
+
+	if (buff_len < length)
+		return -1;
+
+	memset(cookie, '\0', length);
+	memcpy(cookie->opaque, opts->cookie_data, opts->cookie_len);
+
+	return length;
+}
+
 static struct {
 	uint32_t	flag;
 	uint8_t		type;
@@ -250,7 +284,7 @@ static struct {
 	[_CONVERT_F_COOKIE] =		 {
 		.flag	= CONVERT_F_COOKIE,
 		.type	= CONVERT_COOKIE,
-		.cb	= _convert_write_tlv_not_supp,
+		.cb	= _convert_write_tlv_cookie,
 	},
 	[_CONVERT_F_ERROR] =		 {
 		.flag	= CONVERT_F_ERROR,

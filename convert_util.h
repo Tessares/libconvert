@@ -84,6 +84,10 @@ struct convert_opts {
 	uint8_t *		tcp_options;
 	size_t			tcp_options_len;
 
+	/* if CONVERT_F_COOKIE is set in flags */
+	uint8_t *		cookie_data;
+	size_t			cookie_len;
+
 	/* TODO extend to support more TLVs. */
 };
 

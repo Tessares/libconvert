@@ -85,6 +85,25 @@ sample_convert_tcp_ext_hdr_tlv(size_t *len)
 	return ext_tcp_hdr;
 }
 
+struct convert_cookie *
+sample_convert_cookie_tlv(size_t *len)
+{
+	unsigned int	i		= 0;
+	size_t		cookie_len	= 8;
+
+	*len = sizeof(struct convert_cookie) + cookie_len;
+	struct convert_cookie * cookie	= malloc(*len);
+	struct convert_tlv *	tlv	= (struct convert_tlv *)cookie;
+
+	tlv->length		= 3; /* In 32-bit words */
+	tlv->type		= CONVERT_COOKIE;
+	cookie->reserved	= 0;
+	for (i = 0; i < cookie_len; i++)
+		cookie->opaque[i] = rand() % 256;
+
+	return cookie;
+}
+
 START_TEST (test_convert_parse_header) {
 	int			ret;
 	struct convert_header	hdr;
@@ -236,6 +255,37 @@ START_TEST (test_convert_parse_tlvs_ext_tcp_hdr) {
 }
 END_TEST
 
+START_TEST (test_convert_parse_tlvs_cookie) {
+	struct convert_opts *	opts;
+	uint8_t *		buff;
+	size_t			buff_len;
+	struct convert_cookie * cookie;
+	unsigned int		i;
+	size_t			cookie_len;
+
+	buff	= (uint8_t *)sample_convert_cookie_tlv(&buff_len);
+	cookie	= (struct convert_cookie *)buff;
+
+	opts = convert_parse_tlvs(buff, sizeof(struct convert_cookie) - 1);
+	ck_assert_msg(opts == NULL,
+	              "Should fail: buff len shorter than Cookie TLV");
+
+	opts = convert_parse_tlvs(buff, buff_len);
+	ck_assert_msg(opts != NULL, "Should parse valid Convert Cookie TLV");
+	ck_assert_msg(opts->flags & CONVERT_F_COOKIE, "Should set COOKIE flag");
+
+	cookie_len = buff_len - sizeof(struct convert_cookie);
+	ck_assert_msg(opts->cookie_len == cookie_len, "Should set cookie_len");
+
+	for (i = 0; i < cookie_len; ++i)
+		ck_assert_msg(opts->cookie_data[i] == cookie->opaque[i],
+		              "Should return exact copy TCP options");
+
+	convert_free_opts(opts);
+	free(buff);
+}
+END_TEST
+
 START_TEST (test_convert_parse_tlvs_multiple) {
 	struct convert_opts *	opts;
 	uint8_t *		buff;
@@ -266,10 +316,11 @@ END_TEST
 
 START_TEST (test_convert_write_tlvs) {
 	unsigned int	i;
-	uint8_t *	(*tlv_builders[3])(size_t *len) = {
+	uint8_t *	(*tlv_builders[4])(size_t *len) = {
 		(uint8_t * (*)(size_t *))sample_convert_connect_tlv,
 		(uint8_t * (*)(size_t *))sample_convert_error_tlv,
-		(uint8_t * (*)(size_t *))sample_convert_tcp_ext_hdr_tlv
+		(uint8_t * (*)(size_t *))sample_convert_tcp_ext_hdr_tlv,
+		(uint8_t * (*)(size_t *))sample_convert_cookie_tlv,
 	};
 
 	/* For each TLV type, we expect convert_write(convert_read(TLV)) == TLV,
@@ -322,6 +373,7 @@ convert_util_suite(void)
 	tcase_add_test(tc_core, test_convert_parse_tlvs_connect);
 	tcase_add_test(tc_core, test_convert_parse_tlvs_error);
 	tcase_add_test(tc_core, test_convert_parse_tlvs_ext_tcp_hdr);
+	tcase_add_test(tc_core, test_convert_parse_tlvs_cookie);
 	tcase_add_test(tc_core, test_convert_parse_tlvs_multiple);
 	tcase_add_test(tc_core, test_convert_write_tlvs);
 	/* TODO:
