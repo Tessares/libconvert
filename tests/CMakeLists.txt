@@ -25,7 +25,7 @@ add_test(NAME check_convert_util
 set(TEST_WRAPPER "${PROJECT_SOURCE_DIR}/tests/test-wrapper")
 
 foreach(TEST_CMD "curl" "wget")
-    foreach(TEST_TYPE "test_ok" "test_error")
+    foreach(TEST_TYPE "test_ok" "test_error" "test_cookie_ok" "test_cookie_error")
         set (test_name "${TEST_CMD}-${TEST_TYPE}")
 
         add_test(NAME "${test_name}"
