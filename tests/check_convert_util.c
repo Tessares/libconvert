@@ -279,7 +279,7 @@ START_TEST (test_convert_parse_tlvs_cookie) {
 
 	for (i = 0; i < cookie_len; ++i)
 		ck_assert_msg(opts->cookie_data[i] == cookie->opaque[i],
-		              "Should return exact copy TCP options");
+		              "Should return exact cookie value");
 
 	convert_free_opts(opts);
 	free(buff);

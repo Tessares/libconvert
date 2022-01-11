@@ -76,7 +76,8 @@ static LIST_HEAD(socket_htbl_t, socket_state) _socket_htable[NUM_BUCKETS];
 static pthread_mutex_t _socket_htable_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static struct addrinfo *_converter_addr;
-static const char *	_convert_port = CONVERT_PORT;
+static const char *	_convert_port	= CONVERT_PORT;
+static const char *	_convert_cookie = NULL;
 
 static FILE *		_log;
 static pthread_mutex_t	_log_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -174,6 +175,12 @@ _redirect_connect_tlv(uint8_t *buf, size_t buf_len, struct sockaddr *addr)
 	struct convert_opts	opts = { 0 };
 
 	opts.flags = CONVERT_F_CONNECT;
+
+	if (_convert_cookie) {
+		opts.flags		|= CONVERT_F_COOKIE;
+		opts.cookie_len		= strlen(_convert_cookie);
+		opts.cookie_data	= (uint8_t *)_convert_cookie;
+	}
 
 	switch (addr->sa_family) {
 	case AF_INET: {
@@ -543,6 +550,7 @@ _validate_parameters(char *err_buf, size_t len)
 {
 	const char *	convert_addr	= getenv("CONVERT_ADDR");
 	const char *	convert_port	= getenv("CONVERT_PORT");
+	const char *	convert_cookie	= getenv("CONVERT_COOKIE");
 
 	if (!convert_addr) {
 		snprintf(err_buf, len,
@@ -565,6 +573,9 @@ _validate_parameters(char *err_buf, size_t len)
 			_convert_port = convert_port;
 	}
 
+	if (convert_cookie)
+		_convert_cookie = convert_cookie;
+
 	/* resolve address */
 	if (getaddrinfo(convert_addr, _convert_port, NULL,
 	                &_converter_addr) != 0) {
@@ -572,8 +583,10 @@ _validate_parameters(char *err_buf, size_t len)
 		return -1;
 	}
 
-	log_info("connecting to convert service at %s:%s",
-	         convert_addr, _convert_port);
+	log_info("connecting to convert service at %s:%s%s%s",
+	         convert_addr, _convert_port,
+	         _convert_cookie ? " with cookie: " : "",
+	         _convert_cookie ? : "");
 
 	return 0;
 }

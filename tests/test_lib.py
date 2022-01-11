@@ -35,6 +35,9 @@ class TestInstance:
         with open(os.environ["TEST_CONVERT_LOG"]) as f:
             return f.read()
 
+    def get_cookie(self):
+        return os.environ["TEST_CONVERT_COOKIE"]
+
     def assert_result(self, result):
         assert result in self._get_result(), "Couldn't find '{}' in output".format(result)
 
